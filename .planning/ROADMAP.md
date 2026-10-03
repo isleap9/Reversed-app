@@ -137,8 +137,13 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
+**Wave 1**
 - [ ] 05-01: Network service (adapters, DNS, NTP, offloads) and Network page
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 05-02: Audio service and Sound page
+
+**Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 05-03: Affinity service and Startup service with their pages
 
 ### Phase 6: Apps
