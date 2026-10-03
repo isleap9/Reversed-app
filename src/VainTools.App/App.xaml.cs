@@ -6,10 +6,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Windows.AppLifecycle;
-using VainTools.App.Services;
-using VainTools.Services;
 using VainTools.Framework.Logging;
-using VainTools.App.ViewModels;
 using VainTools.Framework;
 using VainTools.Framework.Messaging;
 using VainTools.Framework.Navigation;
@@ -72,10 +69,6 @@ public partial class App : Application
 
         var messenger = Services.GetRequiredService<IMessenger>();
 
-        // Re-resolve localized strings whenever the culture changes.
-        var localizer = Services.GetRequiredService<LocalizedStrings>();
-        messenger.Register<CultureChangedMessage>(localizer, (r, _) => ((LocalizedStrings)r).Refresh());
-
         // Create and show the main window (it wires itself into navigation and theme).
         MainWindow = Services.GetRequiredService<MainWindow>();
         MainWindow.Closed += (_, _) => Shutdown();
@@ -104,26 +97,11 @@ public partial class App : Application
         // Framework services (settings, theme, culture, dialogs, windows, pickers, info bar).
         builder.Services.AddMvvmFramework();
 
-        // App services.
-        builder.Services.AddSingleton<LocalizedStrings>();
-
         // Persist settings under the app's own folder.
         builder.Services.AddSingleton<ISettingsStorage>(new FileSettingsStorage("VainTools"));
 
         // Main window.
         builder.Services.AddSingleton<MainWindow>();
-
-        // VainTools services
-        builder.Services.AddSingleton<IGpuService, GpuService>();
-        builder.Services.AddSingleton<IProfileService, ProfileService>();
-
-        // View models
-        builder.Services.AddTransient<GpuGovernorViewModel>();
-        builder.Services.AddTransient<ProfilesViewModel>();
-        builder.Services.AddTransient<SystemTweaksViewModel>();
-        builder.Services.AddTransient<ScreenshotsViewModel>();
-        builder.Services.AddTransient<TaskbarViewModel>();
-        builder.Services.AddTransient<DashboardViewModel>();
 
         // Navigation: pages are created through the DI container.
         builder.Services.AddSingleton<INavigationService>(sp =>
