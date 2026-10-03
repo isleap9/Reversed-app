@@ -2,7 +2,45 @@
 ## Session Tracking & Progress
 
 ### Last Updated
-- **Session Start:** Phase 4 execution complete
+- **Session Start:** Build failure fixed; solution green
+
+### Build Status
+- `dotnet build` — succeeded, **0 warnings / 0 errors** (was 1 error + 6 warnings)
+- `dotnet test` — 99 passed / 0 failed
+- App verified to launch: `VainTools.App.exe`, window "Vain Tools", Responding=True
+
+### Resolved Build Issues
+1. **WMC9999 "Could not find any resources appropriate for the specified culture"**
+   - The WinUI markup compiler was resolving a binding on `GpuGovernorPage` and
+     failing to format the resulting *warning* message (its `ErrorMessages`
+     resource set could not be loaded), so the real error was never printed.
+   - Actual cause: `x:Bind ViewModel.RefreshCommand` — `[RelayCommand]` on
+     `RefreshMetricsAsync()` generates `RefreshMetricsCommand`, not
+     `RefreshCommand`. Fixed the binding.
+   - `FanCurveEditor`'s `x:Class` namespace also disagreed with its code-behind
+     (`VainTools.GpuGovernor.Controls` vs `VainTools.App.Controls`); aligned to
+     `VainTools.App.Controls`.
+2. **58x MVVMTK0045** — field-based `[ObservableProperty]` is not AOT compatible
+   in WinRT/WinUI 3. Converted every one to a partial property
+   (`[ObservableProperty] public partial T Name { get; set; }`) across all six
+   ViewModels.
+3. Restored the `TemperatureToColorConverter` foreground bindings on the
+   temperature card in `GpuGovernorPage.xaml` — these had been deleted as a
+   failed workaround for the WMC9999 above.
+
+### Debugging Note (important for future XAML build failures)
+`WMC9999` on this stack is often a **masked** error. To see the real one, run the
+XAML compiler directly against the generated input and read its JSON output:
+
+```bash
+XAMLCOMPILER=~/.nuget/packages/microsoft.windowsappsdk.winui/2.3.0/tools/net472/XamlCompiler.exe
+cp src/VainTools.App/obj/Debug/net10.0-windows10.0.26100.0/win-x64/input.json /tmp/in.json
+"$XAMLCOMPILER" 'C:\path\to\in.json' 'C:\path\to\out.json'
+# then inspect MSBuildLogEntries in out.json for Type != 0
+```
+Note the input/output JSON paths must be native Windows paths, and the compiler
+must be run with its own directory context for type resolution to work.
+
 - **Files Created/Updated:** 
   - `.planning/config.json` [✓]
   - `.planning/REQUIREMENTS.md` [✓]
