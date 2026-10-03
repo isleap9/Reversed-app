@@ -112,6 +112,7 @@ public partial class App : Application
         builder.Services.AddSingleton<IProcessRunner, ProcessRunner>();
         builder.Services.AddSingleton<IPowerService, PowerService>();
         builder.Services.AddSingleton<INetworkService, NetworkService>();
+        builder.Services.AddSingleton<ISoundService, SoundService>();
 
         // View models
         builder.Services.AddTransient<HomeViewModel>();
@@ -121,6 +122,7 @@ public partial class App : Application
         builder.Services.AddTransient<SettingsVisibilityViewModel>();
         builder.Services.AddTransient<PowerEditorViewModel>();
         builder.Services.AddTransient<NetworkPageViewModel>();
+        builder.Services.AddTransient<SoundPageViewModel>();
 
         // Navigation: pages are created through the DI container.
         builder.Services.AddSingleton<INavigationService>(sp =>

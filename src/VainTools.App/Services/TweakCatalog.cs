@@ -576,9 +576,38 @@ public static class TweakCatalog
         },
     ];
 
+    /// <summary>Audio enhancement tweaks (SoundPage).</summary>
+    public static IReadOnlyList<RegistryTweak> Sound { get; } =
+    [
+        new()
+        {
+            Id = "sound.spatial-audio",
+            Name = "Spatial Audio",
+            Description = "Enable spatial audio for headphones and speakers.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Audio",
+            ValueName = "DisableSpatialAudio",
+            EnabledValue = 0,
+            DisabledValue = 1,
+            RequiresAdmin = true,
+        },
+        new()
+        {
+            Id = "sound.audio-enhancements",
+            Name = "Audio Enhancements",
+            Description = "Enable Windows audio enhancements like bass boost and virtualization.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Audio",
+            ValueName = "DisableAudioEnhancements",
+            EnabledValue = 0,
+            DisabledValue = 1,
+            RequiresAdmin = true,
+        },
+    ];
+
     /// <summary>Every tweak, flattened — used by the General overview page.</summary>
     public static IReadOnlyList<RegistryTweak> All { get; } =
-        Explorer.Concat(ContextMenu).Concat(Visual).Concat(System).Concat(Security).Concat(Performance).Concat(Network).ToList();
+        Explorer.Concat(ContextMenu).Concat(Visual).Concat(System).Concat(Security).Concat(Performance).Concat(Network).Concat(Sound).ToList();
 
     /// <summary>Lookup by <see cref="RegistryTweak.Id"/>.</summary>
     public static RegistryTweak? Find(string id) =>

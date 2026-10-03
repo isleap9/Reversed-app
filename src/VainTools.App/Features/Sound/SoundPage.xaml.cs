@@ -1,4 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Controls;
+using VainTools.App.ViewModels;
 
 namespace VainTools.App.Features.Sound;
 
@@ -8,5 +10,6 @@ public sealed partial class SoundPage : Page
     public SoundPage()
     {
         InitializeComponent();
+        DataContext = App.Services.GetRequiredService<SoundPageViewModel>();
     }
 }
