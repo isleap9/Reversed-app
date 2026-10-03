@@ -16,7 +16,7 @@ public class ServiceProvider : IServiceFactory
     /// </summary>
     public void RegisterSingleton<T>(Func<T> factory)
     {
-        _singletons[typeof(T)] = factory;
+        _singletons[typeof(T)] = () => factory();
     }
 
     /// <summary>
@@ -24,7 +24,7 @@ public class ServiceProvider : IServiceFactory
     /// </summary>
     public void RegisterTransient<T>(Func<T> factory)
     {
-        _factories[typeof(T)] = factory;
+        _factories[typeof(T)] = () => factory();
     }
 
     /// <summary>

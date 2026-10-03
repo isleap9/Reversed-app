@@ -1,6 +1,7 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using VainTools.Pages;
+using VainTools.GpuGovernor.Views;
 
 namespace VainTools;
 
@@ -15,7 +16,7 @@ public sealed partial class MainWindow : Window
         this.Title = "Vain Tools";
 
         _pages["dashboard"] = new DashboardPage();
-        _pages["gpu"] = new GpuGovernorPage();
+        _pages["gpu"] = new GpuGovernorView();
         _pages["profiles"] = new ProfilesPage();
         _pages["system"] = new SystemTweaksPage();
         _pages["screenshots"] = new ScreenshotsPage();

@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
+using Microsoft.UI.Xaml.Controls;
 
 namespace VainTools.Services;
 
@@ -14,7 +13,7 @@ public interface INavigationService
     /// Navigates to the specified page type.
     /// </summary>
     /// <typeparam name="TPage">The page type to navigate to.</typeparam>
-    Task NavigateToAsync<TPage>() where TPage : Page;
+    Task NavigateToAsync<TPage>() where TPage : Page, new();
 
     /// <summary>
     /// Navigates to a named page.

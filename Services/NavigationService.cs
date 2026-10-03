@@ -1,6 +1,6 @@
 using System;
 using System.Threading.Tasks;
-using System.Windows.Controls;
+using Microsoft.UI.Xaml.Controls;
 
 namespace VainTools.Services;
 
@@ -23,7 +23,7 @@ public class NavigationService : INavigationService
             throw new InvalidOperationException("Navigation container not set.");
         }
 
-        await Task.Run(() => _frame.Navigate(new TPage()));
+        await Task.Run(() => _frame.Navigate(typeof(TPage)));
     }
 
     public async Task NavigateToAsync(string pageName)
