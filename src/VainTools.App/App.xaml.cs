@@ -7,6 +7,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Windows.AppLifecycle;
 using VainTools.App.Services;
+using VainTools.Services;
 using VainTools.Framework.Logging;
 using VainTools.App.ViewModels;
 using VainTools.Framework;
@@ -26,7 +27,7 @@ public partial class App : Application
     /// <summary>The primary application window.</summary>
     public static MainWindow? MainWindow { get; private set; }
 
-    public static string AppName => "App Template";
+    public static string AppName => "Vain Tools";
 
     public static string AppVersion =>
         typeof(App).Assembly.GetName().Version?.ToString(3) ?? "1.0.0";
@@ -112,9 +113,17 @@ public partial class App : Application
         // Main window.
         builder.Services.AddSingleton<MainWindow>();
 
-        // View models.
-        builder.Services.AddTransient<HomeViewModel>();
-        builder.Services.AddTransient<SettingsViewModel>();
+        // VainTools services
+        builder.Services.AddSingleton<IGpuService, GpuService>();
+        builder.Services.AddSingleton<IProfileService, ProfileService>();
+
+        // View models
+        builder.Services.AddTransient<GpuGovernorViewModel>();
+        builder.Services.AddTransient<ProfilesViewModel>();
+        builder.Services.AddTransient<SystemTweaksViewModel>();
+        builder.Services.AddTransient<ScreenshotsViewModel>();
+        builder.Services.AddTransient<TaskbarViewModel>();
+        builder.Services.AddTransient<DashboardViewModel>();
 
         // Navigation: pages are created through the DI container.
         builder.Services.AddSingleton<INavigationService>(sp =>

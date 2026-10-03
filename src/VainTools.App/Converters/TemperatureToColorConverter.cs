@@ -2,7 +2,7 @@ using System;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Media;
 
-namespace VainTools.GpuGovernor.Converters;
+namespace VainTools.App.Converters;
 
 /// <summary>
 /// Converts a temperature value to a color for display.

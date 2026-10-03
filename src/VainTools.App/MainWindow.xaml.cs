@@ -42,7 +42,7 @@ public sealed partial class MainWindow : Window
         ConfigureWindow();
 
         _navigation.SetFrame(ContentFrame);
-        _navigation.NavigateTo<HomePage>();
+        _navigation.NavigateTo<GpuGovernorPage>();
         _navigation.Navigated += (_, _) => RefreshShellState();
         RefreshShellState();
 
@@ -69,13 +69,17 @@ public sealed partial class MainWindow : Window
     /// <summary>Navigation items for the shell NavigationView (top of the pane).</summary>
     public IReadOnlyList<NavigationItem> NavItems { get; } =
     [
-        new("Home", "\uE80F", typeof(HomePage)),
+        new("GPU Governor", "\uE7F4", typeof(GpuGovernorPage)),
+        new("Profiles", "\uE77B", typeof(ProfilesPage)),
+        new("System Tweaks", "\uE713", typeof(SystemTweaksPage)),
+        new("Screenshots", "\uE7C4", typeof(ScreenshotsPage)),
+        new("Taskbar", "\uE7E8", typeof(TaskbarPage)),
     ];
 
     /// <summary>Navigation items pinned to the bottom of the pane (footer).</summary>
     public IReadOnlyList<NavigationItem> FooterNavItems { get; } =
     [
-        new("Settings", "\uE713", typeof(SettingsPage)),
+        new("Dashboard", "\uE80F", typeof(DashboardPage)),
     ];
 
     /// <summary>Applies an application theme to this window's content and title bar.</summary>

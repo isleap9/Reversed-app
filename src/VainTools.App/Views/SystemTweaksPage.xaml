@@ -1,0 +1,34 @@
+<Page x:Class="VainTools.App.Views.SystemTweaksPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      mc:Ignorable="d">
+
+    <Grid Padding="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="System Tweaks" FontSize="24" FontWeight="Bold" Margin="0,0,0,16"/>
+
+        <Border Grid.Row="1" Padding="16" CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1">
+            <StackPanel Spacing="12">
+                <TextBlock Text="Performance Mode" FontSize="16" FontWeight="SemiBold"/>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.IsPerformanceModeEnabled, Mode=TwoWay}"
+                              Header="Enable performance optimizations"/>
+
+                <TextBlock Text="Game Mode" FontSize="16" FontWeight="SemiBold" Margin="0,16,0,0"/>
+                <ToggleSwitch IsOn="{x:Bind ViewModel.IsGameModeEnabled, Mode=TwoWay}"
+                              Header="Enable game mode settings"/>
+            </StackPanel>
+        </Border>
+
+        <TextBlock Grid.Row="2" Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                   FontSize="12" Opacity="0.6" Margin="0,16,0,0"/>
+    </Grid>
+</Page>
