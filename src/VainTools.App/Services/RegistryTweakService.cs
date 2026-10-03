@@ -211,6 +211,41 @@ public sealed class RegistryTweakService : IRegistryTweakService
         });
     }
 
+    /// <inheritdoc />
+    public int? ReadDword(RegistryHive hive, string keyPath, string valueName)
+    {
+        try
+        {
+            using var baseKey = RegistryKey.OpenBaseKey(hive, PreferredView);
+            using var key = baseKey.OpenSubKey(keyPath, writable: false);
+            var value = key?.GetValue(valueName);
+            return value switch
+            {
+                int i => i,
+                long l => (int)l,
+                _ => null,
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not read DWORD {Key}\\{Value}", keyPath, valueName);
+            return null;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task WriteDword(RegistryHive hive, string keyPath, string valueName, int value)
+    {
+        await Task.Run(() =>
+        {
+            using var baseKey = RegistryKey.OpenBaseKey(hive, PreferredView);
+            using var key = baseKey.CreateSubKey(keyPath, writable: true)
+                ?? throw new InvalidOperationException($"Could not open or create '{keyPath}'.");
+            key.SetValue(valueName, value, RegistryValueKind.DWord);
+            _logger.LogInformation("Wrote DWORD {Key}\\{Value} = {Value}", keyPath, valueName, value);
+        });
+    }
+
     private static bool DetectElevation()
     {
         try

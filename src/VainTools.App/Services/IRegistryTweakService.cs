@@ -34,4 +34,10 @@ public interface IRegistryTweakService
 
     /// <summary>Writes a string value to the registry.</summary>
     Task WriteString(RegistryHive hive, string keyPath, string valueName, string value);
+
+    /// <summary>Reads a DWORD value from the registry. Returns null if not found.</summary>
+    int? ReadDword(RegistryHive hive, string keyPath, string valueName);
+
+    /// <summary>Writes a DWORD value to the registry.</summary>
+    Task WriteDword(RegistryHive hive, string keyPath, string valueName, int value);
 }

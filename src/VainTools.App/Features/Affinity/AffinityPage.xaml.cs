@@ -1,4 +1,6 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Controls;
+using VainTools.App.ViewModels;
 
 namespace VainTools.App.Features.Affinity;
 
@@ -8,5 +10,6 @@ public sealed partial class AffinityPage : Page
     public AffinityPage()
     {
         InitializeComponent();
+        DataContext = App.Services.GetRequiredService<AffinityViewModel>();
     }
 }

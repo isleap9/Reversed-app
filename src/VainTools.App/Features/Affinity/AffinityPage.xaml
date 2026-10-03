@@ -2,38 +2,131 @@
     x:Class="VainTools.App.Features.Affinity.AffinityPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:local="using:VainTools.App.Features.Affinity"
-    mc:Ignorable="d">
+    xmlns:vm="using:VainTools.App.ViewModels">
 
-    <Grid Padding="24">
+    <Grid Padding="24" RowSpacing="16">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0"
-                   Text="Affinity"
-                   Style="{StaticResource TitleTextBlockStyle}"/>
+        <!-- Header -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Affinity" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Text="CPU affinity and ideal-processor sets for running processes."
+                           Margin="0,4,0,0"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+            <Button Grid.Column="1" Content="Refresh"
+                    Command="{Binding RefreshCommand}"
+                    VerticalAlignment="Top" />
+        </Grid>
 
-        <TextBlock Grid.Row="1"
-                   Margin="0,8,0,0"
-                   TextWrapping="Wrap"
-                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                   Text="CPU affinity and ideal-processor sets for running processes."/>
+        <!-- Elevation InfoBar -->
+        <InfoBar x:Name="ElevationBar"
+                 Grid.Row="1"
+                 IsOpen="False"
+                 IsClosable="False"
+                 Severity="Warning"
+                 Title="Administrator rights required"
+                 Message="Some settings on this page write to machine-wide keys. Run Vain Tools as administrator to change them." />
 
-        <Border Grid.Row="2"
-                Margin="0,16,0,0"
-                Padding="16"
-                CornerRadius="8"
-                VerticalAlignment="Top"
+        <!-- Process List -->
+        <Border Grid.Row="2" Padding="16" CornerRadius="8"
                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                 BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                 BorderThickness="1">
-            <TextBlock Text="Not implemented yet."
-                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
+            <StackPanel>
+                <TextBlock Text="Running Processes" FontWeight="SemiBold" />
+                <ItemsControl ItemsSource="{Binding Processes}" Margin="0,8,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ProcessViewModel">
+                            <Grid Padding="8" ColumnSpacing="16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                    <TextBlock FontSize="12" Opacity="0.7">
+                                        <Run Text="PID " />
+                                        <Run Text="{Binding Id}" />
+                                        <Run Text=" · " />
+                                        <Run Text="{Binding CpuCount}" />
+                                        <Run Text=" CPUs" />
+                                    </TextBlock>
+                                </StackPanel>
+                                <Button Grid.Column="1" Content="Edit Affinity"
+                                        Command="{Binding DataContext.SelectProcessCommand, ElementName=AffinityRoot}"
+                                        CommandParameter="{Binding}"
+                                        VerticalAlignment="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </Border>
+
+        <!-- Affinity Editor -->
+        <Border Grid.Row="3" Padding="16" CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="1"
+                Visibility="{Binding IsEditorVisible}">
+            <StackPanel>
+                <TextBlock FontWeight="SemiBold">
+                    <Run Text="CPU Affinity — " />
+                    <Run Text="{Binding SelectedProcess.Name}" />
+                </TextBlock>
+                <TextBlock Text="Select which CPUs this process can use."
+                           Margin="0,4,0,0"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <ItemsControl ItemsSource="{Binding Cpus}" Margin="0,8,0,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <ItemsWrapGrid Orientation="Horizontal" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:CpuAffinityViewModel">
+                            <Border Margin="0,0,8,8" Padding="12" CornerRadius="6"
+                                    Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                                    BorderThickness="1">
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Grid.Column="0">
+                                        <TextBlock FontWeight="SemiBold">
+                                            <Run Text="CPU " />
+                                            <Run Text="{Binding Index}" />
+                                        </TextBlock>
+                                        <TextBlock FontSize="11"
+                                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}">
+                                            <Run Text="Core " />
+                                            <Run Text="{Binding CoreIndex}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <CheckBox Grid.Column="1" Content="Enabled"
+                                              IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                              VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                <Button Content="Apply Settings" Margin="0,8,0,0"
+                        Command="{Binding ApplyAffinityCommand}" />
+            </StackPanel>
         </Border>
     </Grid>
 </Page>
