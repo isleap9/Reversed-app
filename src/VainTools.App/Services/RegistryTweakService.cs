@@ -182,6 +182,35 @@ public sealed class RegistryTweakService : IRegistryTweakService
         _ => Equals(stored, expected),
     };
 
+    /// <inheritdoc />
+    public string? ReadString(RegistryHive hive, string keyPath, string valueName)
+    {
+        try
+        {
+            using var baseKey = RegistryKey.OpenBaseKey(hive, PreferredView);
+            using var key = baseKey.OpenSubKey(keyPath, writable: false);
+            return key?.GetValue(valueName) as string;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogDebug(ex, "Could not read string {Key}\\{Value}", keyPath, valueName);
+            return null;
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task WriteString(RegistryHive hive, string keyPath, string valueName, string value)
+    {
+        await Task.Run(() =>
+        {
+            using var baseKey = RegistryKey.OpenBaseKey(hive, PreferredView);
+            using var key = baseKey.CreateSubKey(keyPath, writable: true)
+                ?? throw new InvalidOperationException($"Could not open or create '{keyPath}'.");
+            key.SetValue(valueName, value, RegistryValueKind.String);
+            _logger.LogInformation("Wrote {Key}\\{Value} = {Value}", keyPath, valueName, value);
+        });
+    }
+
     private static bool DetectElevation()
     {
         try

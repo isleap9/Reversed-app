@@ -1,3 +1,4 @@
+using Microsoft.Win32;
 using VainTools.App.Models;
 
 namespace VainTools.App.Services;
@@ -27,4 +28,10 @@ public interface IRegistryTweakService
 
     /// <summary>Restarts Explorer so shell tweaks take effect. Disruptive: confirm first.</summary>
     Task RestartExplorerAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Reads a string value from the registry. Returns null if not found.</summary>
+    string? ReadString(RegistryHive hive, string keyPath, string valueName);
+
+    /// <summary>Writes a string value to the registry.</summary>
+    Task WriteString(RegistryHive hive, string keyPath, string valueName, string value);
 }
