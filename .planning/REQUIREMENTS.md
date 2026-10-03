@@ -60,19 +60,19 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### General
 
-- [ ] **GEN-01**: General page shows the current state of its sub-settings
-- [ ] **GEN-02**: Explorer tweaks (file extensions, hidden files, etc.) can be applied and reverted
-- [ ] **GEN-03**: Context menu entries can be toggled
-- [ ] **GEN-04**: Visual effects can be configured
-- [ ] **GEN-05**: Date & time / NTP settings can be configured
-- [ ] **GEN-06**: Settings visibility page can hide/show Windows settings pages
+- [x] **GEN-01**: General page shows the current state of its sub-settings
+- [x] **GEN-02**: Explorer tweaks (file extensions, hidden files, etc.) can be applied and reverted
+- [x] **GEN-03**: Context menu entries can be toggled
+- [x] **GEN-04**: Visual effects can be configured
+- [x] **GEN-05**: Date & time / NTP settings can be configured
+- [x] **GEN-06**: Settings visibility page can hide/show Windows settings pages
 
 ### System
 
-- [ ] **SYS-01**: System page shows current tweak state
-- [ ] **SYS-02**: Autoplay, autorun and startup-sound tweaks apply and revert
-- [ ] **SYS-03**: Transparency and notification tweaks apply and revert
-- [ ] **SYS-04**: Changes are reported as applied / reboot-required
+- [x] **SYS-01**: System page shows current tweak state
+- [x] **SYS-02**: Autoplay, autorun and startup-sound tweaks apply and revert
+- [x] **SYS-03**: Transparency and notification tweaks apply and revert
+- [x] **SYS-04**: Changes are reported as applied / reboot-required
 
 ### Security
 
@@ -187,8 +187,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | HOME-01 … HOME-03 | Phase 2 | Complete |
 | VAIN-01,02,04 | Phase 2 | Complete |
 | VAIN-03 | Phase 2 | Partial (apply deferred to Phases 4/5) |
-| GEN-01 … GEN-06 | Phase 3 | Pending |
-| SYS-01 … SYS-04 | Phase 3 | Pending |
+| GEN-01 … GEN-06 | Phase 3 | Complete |
+| SYS-01 … SYS-04 | Phase 3 | Complete |
 | SEC-01 … SEC-05 | Phase 4 | Pending |
 | PERF-01 … PERF-04, PWR-01 … PWR-03 | Phase 4 | Pending |
 | NET-01 … NET-04, SND-01 … SND-04 | Phase 5 | Pending |

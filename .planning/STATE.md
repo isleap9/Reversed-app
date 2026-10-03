@@ -4,9 +4,9 @@ name: Real Vain Toolbox Rebuild
 status: planning
 progress:
   phases_total: 10
-  phases_complete: 2
+  phases_complete: 3
   plans_total: 26
-  plans_complete: 4
+  plans_complete: 7
 ---
 
 # Vain Toolbox - Project State
@@ -16,22 +16,42 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-03)
 
 **Core value:** The full Vain Toolbox feature surface, reimplemented in WinUI 3 with a faithful navigation structure.
-**Current focus:** Phase 3 — General & System
+**Current focus:** Phase 4 — Security, Performance & Power
 
 ## Current Position
 
-Phase 2 of 10 — Home & Vain Tools
-Plan 2 of 2 — complete
-Status: Phase 2 complete; ready to plan Phase 3
+Phase 3 of 10 — General & System
+Plan 3 of 3 — complete
+Status: Phase 3 complete; ready to plan Phase 4
 
 ```
-[====                                              ] 20%
+[======                                            ] 30%
 ```
 
 ## Session Tracking
 
 ### Last Updated
-- **Phase 2 complete:** Home page + `.vain` profile import, verified on real hardware
+- **Phase 3 complete:** registry tweak engine + 7 General/System pages, verified
+
+### Phase 3 Outcome
+- `Models/RegistryTweak.cs` + `Services/RegistryTweakService.cs` — one engine serving
+  every toggle: read / apply / revert, elevation detection, 64-bit-then-32-bit registry
+  view fallback, `RemoveKeyWhenDisabled` for key-presence switches, and
+  `RestartExplorerAsync` (confirmed, never automatic)
+- `Services/TweakCatalog.cs` — 20 real tweaks using the key paths and value names
+  recovered from the binary
+- `Controls/TweakList` — shared presenter; pages supply title + tweak set
+- Pages: General, Explorer, Context Menu, Visual, Date & Time, Settings Visibility, System
+- **130 tests pass** (was 113); 0 warnings / 0 errors
+- Runtime-verified: all 20 tweaks read on this machine, all 7 pages navigate, and an
+  apply→read→revert round-trip on a sandbox key returned Unset→Enabled→Disabled
+
+### Phase 3 notes
+- The test host runs **elevated**, so the admin-refusal path is covered by an
+  assertion that branches on `IsElevated` rather than assuming non-elevation.
+- Reading the catalog on this machine showed most tweaks as `Unset` (the OS default
+  state) rather than Enabled/Disabled — that is expected and is why
+  `DefaultWhenUnset` exists.
 
 ### Phase 2 Outcome
 - `Services/SystemInfoService.cs` — WMI machine summary, per-field fault tolerant
@@ -129,6 +149,14 @@ overwriting files only partially read — delete and rewrite, or use `patch`.
 - **Referencing the app project from the test project makes WinRT resolvable**, which
   can invalidate tests that asserted a `COMException` caused by the old host limitation
   rather than real behaviour. Re-check such tests when adding the reference.
+- **A namespace segment and a type name can collide.** `Features.General.GeneralPage`
+  is ambiguous when a `GeneralPage` type is also in scope; write
+  `typeof(VainTools.App.Features.General.GeneralPage)` in code-behind.
+- **Never test against real registry keys.** Registry tests use a throwaway
+  `HKCU\Software\VainTools\Test\<guid>` key and delete it in `Dispose`; a mistake
+  there would modify the developer's machine.
+- **A running app locks its own exe.** `dotnet build` fails with MSB3021/MSB3027 if
+  `VainTools.App.exe` is still running from a previous smoke test — kill it first.
 
 ## Recent Decisions
 
@@ -155,7 +183,7 @@ overwriting files only partially read — delete and rewrite, or use `patch`.
 
 ## Session Continuity
 
-Resume with: `/gsd-plan-phase 3`
+Resume with: `/gsd-plan-phase 4`
 
 ---
 *This state file tracks progress between development sessions.*

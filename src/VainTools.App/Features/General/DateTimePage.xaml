@@ -4,36 +4,76 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:local="using:VainTools.App.Features.General"
     mc:Ignorable="d">
 
-    <Grid Padding="24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <ScrollViewer>
+        <Grid Padding="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0"
-                   Text="Date &amp; Time"
-                   Style="{StaticResource TitleTextBlockStyle}"/>
+            <StackPanel Grid.Row="0">
+                <TextBlock Text="Date &amp; Time" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Margin="0,4,0,0"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           Text="Date, time and NTP server configuration." />
+            </StackPanel>
 
-        <TextBlock Grid.Row="1"
-                   Margin="0,8,0,0"
-                   TextWrapping="Wrap"
-                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                   Text="Date, time and NTP server configuration."/>
+            <Border Grid.Row="1" Margin="0,16,0,0" Padding="16" CornerRadius="8"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="Time zone" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock Text="{x:Bind ViewModel.CurrentTimeZone}"
+                               Margin="0,6,0,0"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
 
-        <Border Grid.Row="2"
-                Margin="0,16,0,0"
-                Padding="16"
-                CornerRadius="8"
-                VerticalAlignment="Top"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                BorderThickness="1">
-            <TextBlock Text="Not implemented yet."
-                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
-        </Border>
-    </Grid>
+                    <TextBlock Text="Installed time zones" FontWeight="SemiBold" Margin="0,16,0,0" />
+                    <ListView ItemsSource="{x:Bind ViewModel.TimeZones}"
+                              MaxHeight="200"
+                              Margin="0,6,0,0"
+                              SelectionMode="None" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="2" Margin="0,16,0,0" Padding="16" CornerRadius="8"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="NTP servers" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock Text="Windows time sync servers. Separate multiple entries with a space. Requires administrator rights."
+                               Margin="0,6,0,0"
+                               FontSize="12"
+                               TextWrapping="Wrap"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+
+                    <TextBox Text="{x:Bind ViewModel.NtpServers, Mode=TwoWay}"
+                             Margin="0,12,0,0"
+                             PlaceholderText="time.windows.com,0x9" />
+
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,12,0,0">
+                        <Button Content="Apply" Command="{x:Bind ViewModel.ApplyNtpServersCommand}"
+                                Style="{StaticResource AccentButtonStyle}" />
+                        <Button Content="Reload" Command="{x:Bind ViewModel.LoadNtpServersCommand}" />
+                    </StackPanel>
+
+                    <TextBlock Text="Suggested servers" FontWeight="SemiBold" Margin="0,16,0,0" />
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.SuggestedServers}" Margin="0,6,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <TextBlock Text="{x:Bind}" FontSize="12" Opacity="0.8" Margin="0,2,0,0" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <TextBlock Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}"
+                               Margin="0,12,0,0"
+                               FontSize="12"
+                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
 </Page>

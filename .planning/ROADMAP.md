@@ -16,7 +16,7 @@ of their depth.
 
 - [x] **Phase 1: Real Navigation Shell** - 28-page tree, grouped, routed, DI-resolved
 - [x] **Phase 2: Home & Vain Tools** - System summary, quick actions, `.vain` import, restore defaults
-- [ ] **Phase 3: General & System** - Explorer, context menu, visual, date/time, visibility, system tweaks
+- [x] **Phase 3: General & System** - Explorer, context menu, visual, date/time, visibility, system tweaks
 - [ ] **Phase 4: Security, Performance & Power** - Security toggles, timer/MPO, power plan editor
 - [ ] **Phase 5: Network, Sound, Affinity & Startup** - Adapters/DNS/NTP, audio, CPU affinity, startup entries
 - [ ] **Phase 6: Apps** - Appx Manager, Installed Apps, Optional Features, Store
@@ -85,9 +85,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 03-01: Registry tweak service with apply/revert/read-state
-- [ ] 03-02: General + Explorer + Context Menu + Visual pages
-- [ ] 03-03: Date & Time, Settings Visibility and System pages
+- [x] 03-01: Registry tweak service with apply/revert/read-state
+- [x] 03-02: General + Explorer + Context Menu + Visual pages
+- [x] 03-03: Date & Time, Settings Visibility and System pages
 
 ### Phase 4: Security, Performance & Power
 **Goal:** Implement security toggles, performance tuning and the power plan editor.
@@ -249,7 +249,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Real Navigation Shell | 2/2 | Complete | 2026-10-03 |
 | 2. Home & Vain Tools | 2/2 | Complete | 2026-10-03 |
-| 3. General & System | 0/3 | Pending | - |
+| 3. General & System | 3/3 | Complete | 2026-10-03 |
 | 4. Security, Performance & Power | 0/3 | Pending | - |
 | 5. Network, Sound, Affinity & Startup | 0/3 | Pending | - |
 | 6. Apps | 0/2 | Pending | - |

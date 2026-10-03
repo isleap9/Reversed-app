@@ -23,6 +23,7 @@ recognise it as Vain Toolbox — same pages, same grouping, same capabilities.
 
 - ✓ Navigation shell with the real 28-page Vain Toolbox tree — Phase 1
 - ✓ Home page with live machine summary; `.vain` profile import with validation — Phase 2
+- ✓ Registry tweak engine plus the General and System pages (7 pages, 20 tweaks) — Phase 3
 
 ### Active
 

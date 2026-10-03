@@ -108,10 +108,14 @@ public partial class App : Application
         // App services.
         builder.Services.AddSingleton<ISystemInfoService, SystemInfoService>();
         builder.Services.AddSingleton<IVainProfileService, VainProfileService>();
+        builder.Services.AddSingleton<IRegistryTweakService, RegistryTweakService>();
 
         // View models
         builder.Services.AddTransient<HomeViewModel>();
         builder.Services.AddTransient<VainToolsViewModel>();
+        builder.Services.AddTransient<TweakPageViewModelFactory>();
+        builder.Services.AddTransient<DateTimeViewModel>();
+        builder.Services.AddTransient<SettingsVisibilityViewModel>();
 
         // Navigation: pages are created through the DI container.
         builder.Services.AddSingleton<INavigationService>(sp =>

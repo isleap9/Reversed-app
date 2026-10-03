@@ -4,36 +4,63 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:local="using:VainTools.App.Features.General"
+    xmlns:vm="using:VainTools.App.ViewModels"
     mc:Ignorable="d">
 
     <Grid Padding="24">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0"
-                   Text="Settings Visibility"
-                   Style="{StaticResource TitleTextBlockStyle}"/>
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Settings Visibility" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Margin="0,4,0,0"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           Text="Show or hide pages in the Windows Settings app." />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Top">
+                <Button Content="Show all" Command="{x:Bind ViewModel.ShowAllCommand}" />
+                <Button Content="Apply" Command="{x:Bind ViewModel.ApplyCommand}"
+                        Style="{StaticResource AccentButtonStyle}" />
+            </StackPanel>
+        </Grid>
 
         <TextBlock Grid.Row="1"
-                   Margin="0,8,0,0"
+                   Margin="0,12,0,0"
+                   FontSize="12"
                    TextWrapping="Wrap"
-                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                   Text="Show or hide pages in the Windows Settings app."/>
+                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                   Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
 
-        <Border Grid.Row="2"
-                Margin="0,16,0,0"
-                Padding="16"
-                CornerRadius="8"
-                VerticalAlignment="Top"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                BorderThickness="1">
-            <TextBlock Text="Not implemented yet."
-                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
-        </Border>
+        <ScrollViewer Grid.Row="2" Margin="0,12,0,0">
+            <ItemsControl ItemsSource="{x:Bind ViewModel.Pages}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:SettingsPageEntry">
+                        <Border Margin="0,0,0,6" Padding="12" CornerRadius="6"
+                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                                BorderThickness="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{x:Bind DisplayName}" VerticalAlignment="Center" />
+                                <ToggleSwitch Grid.Column="1" MinWidth="0"
+                                              OnContent="Hide" OffContent="Show"
+                                              IsOn="{x:Bind IsHidden, Mode=TwoWay}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
     </Grid>
 </Page>
