@@ -109,6 +109,8 @@ public partial class App : Application
         builder.Services.AddSingleton<ISystemInfoService, SystemInfoService>();
         builder.Services.AddSingleton<IVainProfileService, VainProfileService>();
         builder.Services.AddSingleton<IRegistryTweakService, RegistryTweakService>();
+        builder.Services.AddSingleton<IProcessRunner, ProcessRunner>();
+        builder.Services.AddSingleton<IPowerService, PowerService>();
 
         // View models
         builder.Services.AddTransient<HomeViewModel>();
@@ -116,6 +118,7 @@ public partial class App : Application
         builder.Services.AddTransient<TweakPageViewModelFactory>();
         builder.Services.AddTransient<DateTimeViewModel>();
         builder.Services.AddTransient<SettingsVisibilityViewModel>();
+        builder.Services.AddTransient<PowerEditorViewModel>();
 
         // Navigation: pages are created through the DI container.
         builder.Services.AddSingleton<INavigationService>(sp =>

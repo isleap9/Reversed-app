@@ -13,6 +13,7 @@
             <conv:EnumToStringConverter x:Key="EnumToStringConverter" />
             <conv:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
             <conv:InvertedBooleanToVisibilityConverter x:Key="InverseBoolToVisibility" />
+            <conv:InvertedBooleanConverter x:Key="InvertedBooleanConverter" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>
