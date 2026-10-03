@@ -17,7 +17,7 @@ of their depth.
 - [x] **Phase 1: Real Navigation Shell** - 28-page tree, grouped, routed, DI-resolved
 - [x] **Phase 2: Home & Vain Tools** - System summary, quick actions, `.vain` import, restore defaults
 - [x] **Phase 3: General & System** - Explorer, context menu, visual, date/time, visibility, system tweaks
-- [ ] **Phase 4: Security, Performance & Power** - Security toggles, timer/MPO, power plan editor
+- [x] **Phase 4: Security, Performance & Power** - Security toggles, timer/MPO, power plan editor (completed 2026-10-03)
 - [ ] **Phase 5: Network, Sound, Affinity & Startup** - Adapters/DNS/NTP, audio, CPU affinity, startup entries
 - [ ] **Phase 6: Apps** - Appx Manager, Installed Apps, Optional Features, Store
 - [ ] **Phase 7: Tools** - Device Cleaner, Drive Scanner, Driver Manager
@@ -107,7 +107,7 @@ Plans:
 4. Power Editor lists plans and can edit plan settings
 5. All changes report applied vs reboot-required accurately
 
-**Plans:** 3/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 **Wave 1**
@@ -265,7 +265,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1. Real Navigation Shell | 2/2 | Complete | 2026-10-03 |
 | 2. Home & Vain Tools | 2/2 | Complete | 2026-10-03 |
 | 3. General & System | 3/3 | Complete | 2026-10-03 |
-| 4. Security, Performance & Power | 3/3 | In Progress|  |
+| 4. Security, Performance & Power | 3/3 | Complete    | 2026-10-03 |
 | 5. Network, Sound, Affinity & Startup | 0/3 | Pending | - |
 | 6. Apps | 0/2 | Pending | - |
 | 7. Tools | 0/3 | Pending | - |

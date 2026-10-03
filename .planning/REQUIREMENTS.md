@@ -76,21 +76,21 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Security
 
-- [ ] **SEC-01**: Security page shows current state of security settings
-- [ ] **SEC-02**: Defender / SmartScreen related toggles apply and revert
-- [ ] **SEC-03**: VBS / Memory Integrity state is displayed
-- [ ] **SEC-04**: Vulnerable Driver Blocklist can be toggled
-- [ ] **SEC-05**: Spectre/Meltdown mitigation override is configurable
+- [x] **SEC-01**: Security page shows current state of security settings
+- [x] **SEC-02**: Defender / SmartScreen related toggles apply and revert
+- [x] **SEC-03**: VBS / Memory Integrity state is displayed
+- [x] **SEC-04**: Vulnerable Driver Blocklist can be toggled
+- [x] **SEC-05**: Spectre/Meltdown mitigation override is configurable
 
 ### Performance & Power
 
-- [ ] **PERF-01**: Performance page shows current performance settings
-- [ ] **PERF-02**: Timer resolution can be set
-- [ ] **PERF-03**: MPO / GPU scheduling toggles apply and revert
-- [ ] **PERF-04**: Working-set adjustment coupling is configurable
-- [ ] **PWR-01**: Power Editor shows available power plans
-- [ ] **PWR-02**: User can edit power-plan settings
-- [ ] **PWR-03**: Power changes apply and revert cleanly
+- [x] **PERF-01**: Performance page shows current performance settings
+- [x] **PERF-02**: Timer resolution can be set
+- [x] **PERF-03**: MPO / GPU scheduling toggles apply and revert
+- [x] **PERF-04**: Working-set adjustment coupling is configurable
+- [x] **PWR-01**: Power Editor shows available power plans
+- [x] **PWR-02**: User can edit power-plan settings
+- [x] **PWR-03**: Power changes apply and revert cleanly
 
 ### Network
 
