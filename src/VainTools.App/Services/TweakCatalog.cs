@@ -313,9 +313,118 @@ public static class TweakCatalog
         },
     ];
 
+    /// <summary>Security tweaks (SecurityPage).</summary>
+    public static IReadOnlyList<RegistryTweak> Security { get; } =
+    [
+        new()
+        {
+            Id = "security-defender-disable",
+            Name = "Disable Windows Defender",
+            Description = "Turn off Windows Defender real-time protection.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SOFTWARE\Policies\Microsoft\Windows Defender",
+            ValueName = "DisableAntiSpyware",
+            EnabledValue = 1,
+            DisabledValue = 0,
+            RequiresAdmin = true,
+            DefaultWhenUnset = TweakState.Disabled,
+        },
+        new()
+        {
+            Id = "security-defender-tamper",
+            Name = "Disable Tamper Protection",
+            Description = "Disable Tamper Protection for Windows Defender. Note: Windows may prevent this change even with admin rights.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SOFTWARE\Microsoft\Windows Defender\Features",
+            ValueName = "TamperProtection",
+            EnabledValue = 0,
+            DisabledValue = 5,
+            RequiresAdmin = true,
+            DefaultWhenUnset = TweakState.Disabled,
+        },
+        new()
+        {
+            Id = "security-vbs",
+            Name = "Enable Virtualization-Based Security",
+            Description = "Enable Virtualization-Based Security (VBS). Reboot required.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SYSTEM\CurrentControlSet\Control\DeviceGuard",
+            ValueName = "EnableVirtualizationBasedSecurity",
+            EnabledValue = 1,
+            DisabledValue = 0,
+            RequiresAdmin = true,
+            DefaultWhenUnset = TweakState.Disabled,
+        },
+        new()
+        {
+            Id = "security-memory-integrity",
+            Name = "Enable Memory Integrity",
+            Description = "Enable Memory Integrity (Hypervisor-enforced Code Integrity). Reboot required.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity",
+            ValueName = "Enabled",
+            EnabledValue = 1,
+            DisabledValue = 0,
+            RequiresAdmin = true,
+            DefaultWhenUnset = TweakState.Disabled,
+        },
+        new()
+        {
+            Id = "security-vulnerable-driver-blocklist",
+            Name = "Enable Vulnerable Driver Blocklist",
+            Description = "Enable the Vulnerable Driver Blocklist. Reboot required.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SYSTEM\CurrentControlSet\Control\CI\Config",
+            ValueName = "VulnerableDriverBlocklistEnable",
+            EnabledValue = 1,
+            DisabledValue = 0,
+            RequiresAdmin = true,
+            DefaultWhenUnset = TweakState.Disabled,
+        },
+        new()
+        {
+            Id = "security-spectre-meltdown",
+            Name = "Enable Spectre & Meltdown Mitigations",
+            Description = "Enable Spectre and Meltdown CPU mitigations. May impact performance.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management",
+            ValueName = "FeatureSettingsOverride",
+            EnabledValue = 0,
+            DisabledValue = 3,
+            RequiresAdmin = true,
+            DefaultWhenUnset = TweakState.Disabled,
+        },
+        new()
+        {
+            Id = "security-uac",
+            Name = "Disable User Account Control",
+            Description = "Disable User Account Control. This reduces security — only disable if you understand the risks.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System",
+            ValueName = "EnableLUA",
+            EnabledValue = 0,
+            DisabledValue = 1,
+            RequiresAdmin = true,
+            DefaultWhenUnset = TweakState.Disabled,
+        },
+        new()
+        {
+            Id = "security-smartscreen",
+            Name = "Disable SmartScreen",
+            Description = "Disable SmartScreen. This reduces protection against malicious apps.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SOFTWARE\Policies\Microsoft\Windows\System",
+            ValueName = "EnableSmartScreen",
+            EnabledValue = 0,
+            DisabledValue = 1,
+            RequiresAdmin = true,
+            DefaultWhenUnset = TweakState.Disabled,
+        },
+    ];
+
     /// <summary>Every tweak, flattened — used by the General overview page.</summary>
     public static IReadOnlyList<RegistryTweak> All { get; } =
-        Explorer.Concat(ContextMenu).Concat(Visual).Concat(System).ToList();
+        Explorer.Concat(ContextMenu).Concat(Visual).Concat(System).Concat(Security).ToList();
 
     /// <summary>Lookup by <see cref="RegistryTweak.Id"/>.</summary>
     public static RegistryTweak? Find(string id) =>
