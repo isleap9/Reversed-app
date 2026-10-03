@@ -261,4 +261,116 @@ public sealed class RegistryTweakServiceTests : IDisposable
             Assert.True(Enum.IsDefined(state), $"{tweak.Id} produced an undefined state");
         }
     }
+
+    [Fact]
+    public void Catalog_SecurityTweaks_HaveCorrectIds()
+    {
+        var expectedIds = new[]
+        {
+            "security-defender-disable",
+            "security-defender-tamper",
+            "security-vbs",
+            "security-memory-integrity",
+            "security-vulnerable-driver-blocklist",
+            "security-spectre-meltdown",
+            "security-uac",
+            "security-smartscreen",
+        };
+
+        var actualIds = TweakCatalog.Security.Select(t => t.Id).ToList();
+
+        Assert.Equal(expectedIds.Length, actualIds.Count);
+        foreach (var id in expectedIds)
+        {
+            Assert.Contains(id, actualIds);
+        }
+    }
+
+    [Fact]
+    public void Catalog_SecurityTweaks_AllRequireAdmin()
+    {
+        foreach (var tweak in TweakCatalog.Security)
+        {
+            Assert.True(tweak.RequiresAdmin, $"{tweak.Id} writes HKLM but is not marked RequiresAdmin");
+        }
+    }
+
+    [Fact]
+    public void Catalog_SecurityTweaks_NoneRequireExplorerRestart()
+    {
+        foreach (var tweak in TweakCatalog.Security)
+        {
+            Assert.False(tweak.RequiresExplorerRestart, $"{tweak.Id} should not require Explorer restart");
+        }
+    }
+
+    [Fact]
+    public void Catalog_TamperProtection_InvertedValues()
+    {
+        var tweak = TweakCatalog.Find("security-defender-tamper");
+        Assert.NotNull(tweak);
+        Assert.Equal(0, tweak!.EnabledValue);
+        Assert.Equal(5, tweak.DisabledValue);
+    }
+
+    [Fact]
+    public void Catalog_SpectreMeltdown_InvertedValues()
+    {
+        var tweak = TweakCatalog.Find("security-spectre-meltdown");
+        Assert.NotNull(tweak);
+        Assert.Equal(0, tweak!.EnabledValue);
+        Assert.Equal(3, tweak.DisabledValue);
+    }
+
+    [Fact]
+    public void Catalog_Uac_InvertedValues()
+    {
+        var tweak = TweakCatalog.Find("security-uac");
+        Assert.NotNull(tweak);
+        Assert.Equal(0, tweak!.EnabledValue);
+        Assert.Equal(1, tweak.DisabledValue);
+    }
+
+    [Fact]
+    public void Catalog_SmartScreen_InvertedValues()
+    {
+        var tweak = TweakCatalog.Find("security-smartscreen");
+        Assert.NotNull(tweak);
+        Assert.Equal(0, tweak!.EnabledValue);
+        Assert.Equal(1, tweak.DisabledValue);
+    }
+
+    [Fact]
+    public void Catalog_GpuScheduling_NotInSecurity()
+    {
+        // Sanity: GPU scheduling is a performance tweak, not a security tweak.
+        var gpuTweak = TweakCatalog.Security.FirstOrDefault(t => t.Id.Contains("gpu", StringComparison.OrdinalIgnoreCase));
+        Assert.Null(gpuTweak);
+    }
+
+    [Fact]
+    public void Catalog_SecurityTweaks_HaveRebootRequiredInDescription()
+    {
+        var rebootIds = new[] { "security-vbs", "security-memory-integrity", "security-vulnerable-driver-blocklist" };
+
+        foreach (var id in rebootIds)
+        {
+            var tweak = TweakCatalog.Find(id);
+            Assert.NotNull(tweak);
+            Assert.Contains("Reboot required", tweak!.Description, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    [Fact]
+    public void Catalog_SecurityTweaks_HaveWarningsInDescription()
+    {
+        var warningIds = new[] { "security-uac", "security-smartscreen" };
+
+        foreach (var id in warningIds)
+        {
+            var tweak = TweakCatalog.Find(id);
+            Assert.NotNull(tweak);
+            Assert.Contains("reduces", tweak!.Description, StringComparison.OrdinalIgnoreCase);
+        }
+    }
 }
