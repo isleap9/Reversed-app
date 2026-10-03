@@ -78,11 +78,11 @@ public sealed partial class MainWindow : Window
     public string AppTitle => App.AppName;
 
     /// <summary>App icon shown in the custom title bar.</summary>
-    public ImageSource AppIconSource { get; } = LoadAppIcon();
+    public ImageSource AppIconSource { get; } = LoadAppLogo();
 
-    private static ImageSource LoadAppIcon()
+    private static ImageSource LoadAppLogo()
     {
-        var path = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.png");
+        var path = Path.Combine(AppContext.BaseDirectory, "Assets", "AkariLogo.png");
         return File.Exists(path) ? new BitmapImage(new Uri(path)) : null!;
     }
 
@@ -207,7 +207,7 @@ public sealed partial class MainWindow : Window
                 workArea.X + (workArea.Width - (int)width) / 2,
                 workArea.Y + (workArea.Height - (int)height) / 2));
 
-            var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "AppIcon.ico");
+            var iconPath = Path.Combine(AppContext.BaseDirectory, "Assets", "AkariLogo.ico");
             if (File.Exists(iconPath))
             {
                 appWindow.SetIcon(iconPath);
