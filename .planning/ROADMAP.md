@@ -172,9 +172,9 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Architecture Foundation | 1/1 | Complete | 2026-10-03 |
-| 2. Profile System | 1/2 | In progress | - |
-| 3. GPU Governor Core | 1/3 | In progress | - |
-| 4. GPU Governor Control | 0/2 | Pending | - |
+| 2. Profile System | 2/2 | Complete | 2026-10-03 |
+| 3. GPU Governor Core | 2/2 | Complete | 2026-10-03 |
+| 4. GPU Governor Control | 1/2 | In progress | - |
 | 5. System Tweaks | 0/2 | Pending | - |
 | 6. Screenshots | 0/2 | Pending | - |
 | 7. Taskbar | 0/1 | Pending | - |
