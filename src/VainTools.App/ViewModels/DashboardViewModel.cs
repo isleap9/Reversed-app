@@ -7,7 +7,7 @@ namespace VainTools.App.ViewModels;
 public partial class DashboardViewModel : ViewModelBase
 {
     [ObservableProperty]
-    private string _statusMessage = "Ready";
+    public partial string StatusMessage { get; set; } = "Ready";
 
     public DashboardViewModel()
     {

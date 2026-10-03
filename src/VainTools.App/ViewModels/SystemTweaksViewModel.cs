@@ -7,13 +7,13 @@ namespace VainTools.App.ViewModels;
 public partial class SystemTweaksViewModel : ViewModelBase
 {
     [ObservableProperty]
-    private bool _isPerformanceModeEnabled;
+    public partial bool IsPerformanceModeEnabled { get; set; }
 
     [ObservableProperty]
-    private bool _isGameModeEnabled;
+    public partial bool IsGameModeEnabled { get; set; }
 
     [ObservableProperty]
-    private string _statusMessage = "Ready";
+    public partial string StatusMessage { get; set; } = "Ready";
 
     public SystemTweaksViewModel()
     {

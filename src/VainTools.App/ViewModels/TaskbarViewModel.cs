@@ -7,10 +7,10 @@ namespace VainTools.App.ViewModels;
 public partial class TaskbarViewModel : ViewModelBase
 {
     [ObservableProperty]
-    private bool _isTaskbarHidden;
+    public partial bool IsTaskbarHidden { get; set; }
 
     [ObservableProperty]
-    private string _statusMessage = "Ready";
+    public partial string StatusMessage { get; set; } = "Ready";
 
     public TaskbarViewModel()
     {

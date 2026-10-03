@@ -7,13 +7,13 @@ namespace VainTools.App.ViewModels;
 public partial class ScreenshotsViewModel : ViewModelBase
 {
     [ObservableProperty]
-    private string _saveLocation = "";
+    public partial string SaveLocation { get; set; } = "";
 
     [ObservableProperty]
-    private string _outputFormat = "PNG";
+    public partial string OutputFormat { get; set; } = "PNG";
 
     [ObservableProperty]
-    private string _statusMessage = "Ready";
+    public partial string StatusMessage { get; set; } = "Ready";
 
     public ScreenshotsViewModel()
     {

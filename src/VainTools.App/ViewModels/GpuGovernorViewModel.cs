@@ -21,52 +21,52 @@ public partial class GpuGovernorViewModel : ViewModelBase, IDisposable
     private System.Timers.Timer? _monitoringTimer;
 
     [ObservableProperty]
-    private bool _isMonitoring;
+    public partial bool IsMonitoring { get; set; }
 
     [ObservableProperty]
-    private int _temperature;
+    public partial int Temperature { get; set; }
 
     [ObservableProperty]
-    private int _coreClock;
+    public partial int CoreClock { get; set; }
 
     [ObservableProperty]
-    private int _memoryClock;
+    public partial int MemoryClock { get; set; }
 
     [ObservableProperty]
-    private int _power;
+    public partial int Power { get; set; }
 
     [ObservableProperty]
-    private int _fanSpeed;
+    public partial int FanSpeed { get; set; }
 
     [ObservableProperty]
-    private int _utilization;
+    public partial int Utilization { get; set; }
 
     [ObservableProperty]
-    private GpuInfo? _selectedGpu;
+    public partial GpuInfo? SelectedGpu { get; set; }
 
     [ObservableProperty]
-    private string _statusMessage = "Ready";
+    public partial string StatusMessage { get; set; } = "Ready";
 
     [ObservableProperty]
-    private bool _isRefreshing;
+    public partial bool IsRefreshing { get; set; }
 
     [ObservableProperty]
-    private bool _isApplying;
+    public partial bool IsApplying { get; set; }
 
     [ObservableProperty]
-    private int _targetFanSpeed;
+    public partial int TargetFanSpeed { get; set; }
 
     [ObservableProperty]
-    private int _coreClockOffset;
+    public partial int CoreClockOffset { get; set; }
 
     [ObservableProperty]
-    private int _memoryClockOffset;
+    public partial int MemoryClockOffset { get; set; }
 
     [ObservableProperty]
-    private int _targetPowerLimit;
+    public partial int TargetPowerLimit { get; set; }
 
     [ObservableProperty]
-    private double _pollingIntervalMs = 500;
+    public partial double PollingIntervalMs { get; set; } = 500;
 
     public ObservableCollection<GpuInfo> GpuList { get; } = new();
     public ObservableCollection<NvFanCurvePoint> FanCurvePoints { get; } = new();

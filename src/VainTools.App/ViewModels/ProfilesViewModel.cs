@@ -13,16 +13,16 @@ public partial class ProfilesViewModel : ViewModelBase
     private readonly IProfileService _profileService;
 
     [ObservableProperty]
-    private ObservableCollection<Models.GpuProfile> _profiles = new();
+    public partial ObservableCollection<Models.GpuProfile> Profiles { get; set; } = new();
 
     [ObservableProperty]
-    private Models.GpuProfile? _selectedProfile;
+    public partial Models.GpuProfile? SelectedProfile { get; set; }
 
     [ObservableProperty]
-    private bool _isLoading;
+    public partial bool IsLoading { get; set; }
 
     [ObservableProperty]
-    private string _statusMessage = "Ready";
+    public partial string StatusMessage { get; set; } = "Ready";
 
     public ProfilesViewModel(IProfileService profileService)
     {
