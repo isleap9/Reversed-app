@@ -422,9 +422,119 @@ public static class TweakCatalog
         },
     ];
 
+    /// <summary>Performance tweaks (PerformancePage).</summary>
+    public static IReadOnlyList<RegistryTweak> Performance { get; } =
+    [
+        new()
+        {
+            Id = "perf-skiptick",
+            Name = "Skip Tick Override",
+            Description = "Override the system timer resolution skip tick. May improve timer accuracy.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SYSTEM\CurrentControlSet\Control\Session Manager\kernel",
+            ValueName = "SkipTickOverride",
+            EnabledValue = 1,
+            DisabledValue = 0,
+            RequiresAdmin = true,
+            DefaultWhenUnset = TweakState.Disabled,
+        },
+        new()
+        {
+            Id = "perf-platform-tick",
+            Name = "Use Platform Tick",
+            Description = "Use the platform tick source for timer resolution.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SYSTEM\CurrentControlSet\Control\Session Manager\kernel",
+            ValueName = "UsePlatformTick",
+            EnabledValue = 1,
+            DisabledValue = 0,
+            RequiresAdmin = true,
+            DefaultWhenUnset = TweakState.Disabled,
+        },
+        new()
+        {
+            Id = "perf-timer-expiration",
+            Name = "Timer Expiration",
+            Description = "Set the timer expiration behavior for the system.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SYSTEM\CurrentControlSet\Control\Session Manager\kernel",
+            ValueName = "TimerExpiration",
+            EnabledValue = 1,
+            DisabledValue = 0,
+            RequiresAdmin = true,
+            DefaultWhenUnset = TweakState.Disabled,
+        },
+        new()
+        {
+            Id = "perf-mpo",
+            Name = "Multiplane Overlay (MPO)",
+            Description = "Enable Multiplane Overlay for display composition. Requires Explorer restart.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SOFTWARE\Microsoft\Windows\Dwm",
+            ValueName = "OverlayTestMode",
+            EnabledValue = 1,
+            DisabledValue = 0,
+            RequiresAdmin = true,
+            RequiresExplorerRestart = true,
+            DefaultWhenUnset = TweakState.Disabled,
+        },
+        new()
+        {
+            Id = "perf-gpu-scheduling",
+            Name = "Hardware-Accelerated GPU Scheduling",
+            Description = "Enable Hardware-Accelerated GPU Scheduling. Value 2 = enabled, 1 = disabled.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SYSTEM\CurrentControlSet\Control\GraphicsDrivers",
+            ValueName = "HwSchMode",
+            EnabledValue = 2,
+            DisabledValue = 1,
+            RequiresAdmin = true,
+            DefaultWhenUnset = TweakState.Disabled,
+        },
+        new()
+        {
+            Id = "perf-working-set",
+            Name = "Working Set Adjustment",
+            Description = "Favor system performance over app responsiveness by using a large system cache.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management",
+            ValueName = "LargeSystemCache",
+            EnabledValue = 1,
+            DisabledValue = 0,
+            RequiresAdmin = true,
+            DefaultWhenUnset = TweakState.Disabled,
+        },
+        new()
+        {
+            Id = "perf-game-mode",
+            Name = "Game Mode",
+            Description = "Allow Windows to automatically enable Game Mode for games.",
+            Hive = RegistryHive.CurrentUser,
+            KeyPath = @"Software\Microsoft\GameBar",
+            ValueName = "AllowAutoGameMode",
+            EnabledValue = 1,
+            DisabledValue = 0,
+            RequiresAdmin = false,
+            DefaultWhenUnset = TweakState.Disabled,
+        },
+        new()
+        {
+            Id = "perf-game-dvr",
+            Name = "Game DVR",
+            Description = "Enable Game DVR for background recording of gameplay.",
+            Hive = RegistryHive.CurrentUser,
+            KeyPath = @"System\GameConfigStore",
+            ValueName = "GameDVR_Enabled",
+            EnabledValue = 1,
+            DisabledValue = 0,
+            RequiresAdmin = false,
+            DefaultWhenUnset = TweakState.Disabled,
+        },
+    ];
+
     /// <summary>Every tweak, flattened — used by the General overview page.</summary>
     public static IReadOnlyList<RegistryTweak> All { get; } =
-        Explorer.Concat(ContextMenu).Concat(Visual).Concat(System).Concat(Security).ToList();
+        Explorer.Concat(ContextMenu).Concat(Visual).Concat(System).Concat(Security).Concat(Performance).ToList();
 
     /// <summary>Lookup by <see cref="RegistryTweak.Id"/>.</summary>
     public static RegistryTweak? Find(string id) =>
