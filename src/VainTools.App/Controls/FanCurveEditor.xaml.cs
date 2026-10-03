@@ -9,7 +9,7 @@ using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Shapes;
 using VainTools.Models;
 
-namespace VainTools.GpuGovernor.Controls;
+namespace VainTools.App.Controls;
 
 /// <summary>
 /// Editor control for GPU fan curve points.
