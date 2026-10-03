@@ -1,184 +1,262 @@
-# Roadmap: Vain Tools
+# Roadmap: Vain Toolbox (WinUI 3 Rebuild)
 
 ## Overview
 
-This roadmap guides the reverse-engineered recreation of Vain Toolbox.exe using WinUI 3 MVVM. The project is structured into 8 phases, each delivering a coherent set of features. Phase 1 establishes the architectural foundation, followed by incremental feature delivery across GPU management, system tweaks, screenshots, taskbar customization, and finally the dashboard.
+This roadmap rebuilds **Vain Toolbox** in WinUI 3 / C#, following the real
+application's structure recovered by static analysis
+(`.planning/research/VAIN-TOOLBOX-GROUND-TRUTH.md`).
+
+The previous roadmap targeted six pages that do not exist in the real product. It
+has been replaced. Phase 1 now delivers the real 30-page navigation shell; the
+feature phases then fill those pages in, with the two flagship areas — the NVIDIA
+DRS editor and the EDID/display editor — given their own dedicated phases because
+of their depth.
 
 ## Phases
 
-- [x] **Phase 1: Architecture Foundation** - WinUI 3 MVVM skeleton with DI container ✓
-- [ ] **Phase 2: Profile System** - Profile creation, persistence, and switching
-- [ ] **Phase 3: GPU Governor Core** - GPU monitoring (temp, clocks, power, fan speed)
-- [ ] **Phase 4: GPU Governor Control** - Manual GPU adjustments (fans, clocks, power)
-- [ ] **Phase 5: System Tweaks** - Performance optimizations and settings
-- [ ] **Phase 6: Screenshots** - Screen capture functionality
-- [ ] **Phase 7: Taskbar** - Taskbar customization features
-- [ ] **Phase 8: Dashboard** - Status overview and quick actions
+- [ ] **Phase 1: Real Navigation Shell** - 30-page tree, grouped, routed, DI-resolved
+- [ ] **Phase 2: Home & Vain Tools** - System summary, quick actions, `.vain` import, restore defaults
+- [ ] **Phase 3: General & System** - Explorer, context menu, visual, date/time, visibility, system tweaks
+- [ ] **Phase 4: Security, Performance & Power** - Security toggles, timer/MPO, power plan editor
+- [ ] **Phase 5: Network, Sound, Affinity & Startup** - Adapters/DNS/NTP, audio, CPU affinity, startup entries
+- [ ] **Phase 6: Apps** - Appx Manager, Installed Apps, Optional Features, Store
+- [ ] **Phase 7: Tools** - Device Cleaner, Drive Scanner, Driver Manager
+- [ ] **Phase 8: NVIDIA DRS Editor** - Driver settings read/stage/apply, per-game profiles, `.vain` export
+- [ ] **Phase 9: Display / EDID Editor** - Monitor enumeration, custom resolutions, EDID override, driver restart
+- [ ] **Phase 10: Experimental, About & Tray Helper** - Experimental page, About, screenshots, taskbar, latency
 
 ## Phase Details
 
-### Phase 1: Architecture Foundation
-**Goal:** Establish the WinUI 3 MVVM architecture with proper separation of concerns and dependency injection.
+### Phase 1: Real Navigation Shell
+**Goal:** Replace the six guessed pages with the real 30-page Vain Toolbox navigation tree, grouped and routed.
 
 **Depends on:** Nothing (first phase)
 
-**Requirements:** [ARCH-01, ARCH-02, ARCH-03, ARCH-04]
+**Requirements:** [NAV-01, NAV-02, NAV-03, NAV-04, NAV-05, NAV-06]
 
 **Success Criteria** (what must be TRUE):
-1. Project compiles and runs with empty MainWindow
-2. MVVM pattern established with base classes (ViewModel, View)
-3. DI container registered and functional
-4. Service layer abstraction defined for GPU operations
+1. Nav pane shows the real page tree in the real grouping order
+2. Nested groups (General, Apps, GPU, Tools) expand to their sub-pages
+3. Every one of the 30 pages is reachable and renders without error
+4. The previously guessed pages are removed and no longer referenced
+5. Navigation state is reflected correctly on startup and after each navigation
+6. Solution builds with 0 warnings / 0 errors and the existing test suite still passes
 
-**Plans:** 1 plan
+**Plans:** 2 plans
 
 Plans:
-- [x] 01-01: Create WinUI 3 MVVM project structure with DI container
+- [ ] 01-01: Define the real navigation model and page scaffolding (30 pages, grouped)
+- [ ] 01-02: Rewire the shell (MainWindow nav, DI registration) and retire the old pages
 
-### Phase 2: Profile System
-**Goal:** Implement GPU profile management (creation, persistence, switching).
+### Phase 2: Home & Vain Tools
+**Goal:** Deliver the landing page and the app's own settings, including `.vain` profile import.
 
 **Depends on:** Phase 1
 
-**Requirements:** [PROF-01, PROF-02, PROF-03, PROF-04]
+**Requirements:** [HOME-01, HOME-02, HOME-03, VAIN-01, VAIN-02, VAIN-03, VAIN-04]
 
 **Success Criteria** (what must be TRUE):
-1. User can create named GPU profiles
-2. Profiles persist to JSON/YAML file
-3. Profile switching applies settings immediately
-4. Factory presets (Gaming, Silent) are available
+1. Home shows OS/CPU/RAM/GPU summary and driver version
+2. Home offers working quick actions
+3. User can import a `.vain` file via picker and via drag-and-drop
+4. A foreign or malformed `.vain` file is rejected with a clear message
+5. "Restore Vain defaults" applies the documented default set after confirmation
 
 **Plans:** 2 plans
 
 Plans:
-- [ ] 02-01: Implement profile data model and persistence service
-- [ ] 02-02: Create profile management UI with listing and switching
+- [ ] 02-01: Implement system-info service and Home page
+- [ ] 02-02: Implement `.vain` import pipeline and restore-defaults flow
 
-### Phase 3: GPU Governor Core
-**Goal:** Display real-time GPU metrics (temperature, clocks, power, utilization).
+### Phase 3: General & System
+**Goal:** Implement the General sub-pages and the System tweak page with apply/revert.
 
 **Depends on:** Phase 2
 
-**Requirements:** [GPU-01, GPU-02, GPU-03, GPU-04]
+**Requirements:** [GEN-01, GEN-02, GEN-03, GEN-04, GEN-05, GEN-06, SYS-01, SYS-02, SYS-03, SYS-04]
 
 **Success Criteria** (what must be TRUE):
-1. GPU temperature displays and updates in real-time
-2. Core/memory clock speeds display correctly
-3. Power consumption shows accurate reading
-4. Fan speed percentage is displayed and updates
+1. General, Explorer, Context Menu, Visual, Date & Time and Settings Visibility pages all render their real controls
+2. Explorer tweaks (extensions, hidden files) apply and revert
+3. Context menu entries toggle correctly
+4. System tweaks (autoplay, autorun, startup sound, transparency) apply and revert
+5. Reboot-required changes are reported as such
 
-**Plans:** 2 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] 03-01: Integrate NVML/NVIDIA API for GPU metrics
-- [ ] 03-02: Create GPU governor view with metrics display
+- [ ] 03-01: Registry tweak service with apply/revert/read-state
+- [ ] 03-02: General + Explorer + Context Menu + Visual pages
+- [ ] 03-03: Date & Time, Settings Visibility and System pages
 
-### Phase 4: GPU Governor Control
-**Goal:** Enable user control over GPU fan speed, clocks, and power limits.
+### Phase 4: Security, Performance & Power
+**Goal:** Implement security toggles, performance tuning and the power plan editor.
 
 **Depends on:** Phase 3
 
-**Requirements:** [GPU-05, GPU-06, GPU-07, GPU-08]
+**Requirements:** [SEC-01, SEC-02, SEC-03, SEC-04, SEC-05, PERF-01, PERF-02, PERF-03, PERF-04, PWR-01, PWR-02, PWR-03]
 
 **Success Criteria** (what must be TRUE):
-1. User can adjust fan speed to specific percentage
-2. User can see and modify fan curve presets
-3. User can increase/decrease core clock offsets
-4. User can set power limit targets
+1. Security page displays current Defender/SmartScreen/VBS state
+2. Vulnerable Driver Blocklist and Spectre/Meltdown overrides are configurable
+3. Timer resolution and MPO/GPU-scheduling toggles apply and revert
+4. Power Editor lists plans and can edit plan settings
+5. All changes report applied vs reboot-required accurately
 
-**Plans:** 2 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] 04-01: Implement GPU control APIs over NVML
-- [ ] 04-02: Create control UI with sliders and inputs
+- [ ] 04-01: Security service (Defender/VBS/blocklist) and Security page
+- [ ] 04-02: Performance service (timer, MPO, GPU scheduling) and Performance page
+- [ ] 04-03: Power plan service (powercfg) and Power Editor page
 
-### Phase 5: System Tweaks
-**Goal:** Provide system optimization settings for performance enhancements.
+### Phase 5: Network, Sound, Affinity & Startup
+**Goal:** Implement the networking, audio, CPU affinity and startup-management pages.
 
 **Depends on:** Phase 4
 
-**Requirements:** [SYS-01, SYS-02, SYS-03, SYS-04]
+**Requirements:** [NET-01, NET-02, NET-03, NET-04, SND-01, SND-02, SND-03, SND-04, AFF-01, AFF-02, AFF-03, STR-01, STR-02, STR-03, STR-04]
 
 **Success Criteria** (what must be TRUE):
-1. System tweaks panel displays current settings
-2. Performance mode can be enabled/disabled
-3. Game mode settings are configurable
-4. Changes can be applied and reverted safely
+1. Network page lists adapters and can set DNS + NTP servers
+2. Adapter offload settings are viewable and toggleable
+3. Sound page lists devices and exposes spatial audio / enhancement toggles
+4. Affinity page can set CPU affinity for a running process and save the rule
+5. Startup page lists Run-key and scheduled-task entries, and can enable/disable/delete them
 
-**Plans:** 2 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] 05-01: Implement system tweak service layer
-- [ ] 05-02: Create system tweaks UI with toggle controls
+- [ ] 05-01: Network service (adapters, DNS, NTP, offloads) and Network page
+- [ ] 05-02: Audio service and Sound page
+- [ ] 05-03: Affinity service and Startup service with their pages
 
-### Phase 6: Screenshots
-**Goal:** Add Windows-style screen capture functionality.
+### Phase 6: Apps
+**Goal:** Implement app and package management across the four Apps sub-pages.
 
 **Depends on:** Phase 5
 
-**Requirements:** [SCR-01, SCR-02, SCR-03, SCR-04]
+**Requirements:** [APPX-01, APPX-02, INST-01, INST-02, INST-03, OPT-01, OPT-02, STOR-01, STOR-02]
 
 **Success Criteria** (what must be TRUE):
-1. User can capture rectangular region of screen
-2. User can capture full screen screenshot
-3. Screenshots save to configured directory
-4. Output format can be selected (PNG/JPG)
+1. Appx Manager lists installed and provisioned packages and can remove them
+2. Installed Apps lists uninstall-registry programs with uninstall + copy-command
+3. Optional Features lists features and can enable/disable them
+4. Store page lists installable apps and can install one
 
 **Plans:** 2 plans
 
 Plans:
-- [ ] 06-01: Integrate Windows GraphicsCapture API
-- [ ] 06-02: Create screenshot UI with capture modes
+- [ ] 06-01: Package service (Appx + uninstall registry + optional features) and three pages
+- [ ] 06-02: Store integration and Store page
 
-### Phase 7: Taskbar
-**Goal:** Add taskbar customization capabilities.
+### Phase 7: Tools
+**Goal:** Implement Device Cleaner, Drive Scanner and Driver Manager.
 
 **Depends on:** Phase 6
 
-**Requirements:** [TBR-01, TBR-02, TBR-03]
+**Requirements:** [TOOL-01, TOOL-02, TOOL-03, TOOL-04, DRV-01, DRV-02, DRV-03, DRV-04, DRV-05]
 
 **Success Criteria** (what must be TRUE):
-1. Taskbar can be hidden via UI toggle
-2. Taskbar modifications apply cleanly
-3. Settings are user-configurable
+1. Device Cleaner detects orphaned processes, services, devices, driver packages, registry keys and folders
+2. Selected orphans can be removed, with force-delete offered on failure
+3. Drive Scanner reports space usage broken down by folder
+4. Driver Manager enumerates, exports, deletes and adds driver packages via `pnputil`
+5. GPU driver uninstall works for NVIDIA and AMD, with elevation detected and explained
 
-**Plans:** 1 plan
+**Plans:** 3 plans
 
 Plans:
-- [ ] 07-01: Implement taskbar modification APIs and UI
+- [ ] 07-01: Device Cleaner detection engine and page
+- [ ] 07-02: Drive Scanner service and page
+- [ ] 07-03: Driver Manager (pnputil wrapper) and page
 
-### Phase 8: Dashboard
-**Goal:** Provide unified status overview and quick access actions.
+### Phase 8: NVIDIA DRS Editor
+**Goal:** Implement the flagship NVIDIA driver-settings editor over `nvapi64.dll`.
 
 **Depends on:** Phase 7
 
-**Requirements:** [DSH-01, DSH-02, DSH-03]
+**Requirements:** [DRS-01, DRS-02, DRS-03, DRS-04, DRS-05, DRS-06, DRS-07, DRS-08, DRS-09, DRS-10, DRS-11, DRS-12, DRS-13]
 
 **Success Criteria** (what must be TRUE):
-1. Dashboard shows GPU temperature, clocks, utilization at a glance
-2. System metrics summary is visible
-3. Quick action buttons launch frequent operations
+1. All global-profile driver settings load and display with driver default vs current
+2. Per-application profiles are listed and selectable
+3. Settings can be searched across profiles
+4. Dword/Binary/AnsiString/bitmask/custom-value editors all work
+5. Edits stage and only apply on explicit Apply; readback verifies the result
+6. Staged changes can be discarded and values reloaded from the driver
+7. Global profile exports to `.vain`; restore-all-defaults works behind a confirmation
+8. Missing `nvapi64.dll` or a failed DRS session produces a clear error, not silence
 
-**Plans:** 1 plan
+**Plans:** 3 plans
 
 Plans:
-- [ ] 08-01: Create dashboard page with status widgets and actions
+- [ ] 08-01: NVAPI DRS interop layer (session, setting enumeration, typed values)
+- [ ] 08-02: DRS page with profile list, search and typed editors
+- [ ] 08-03: Staged-change engine, readback verification and `.vain` export
+
+### Phase 9: Display / EDID Editor
+**Goal:** Implement the monitor EDID override and custom-resolution editor.
+
+**Depends on:** Phase 8
+
+**Requirements:** [DISP-01, DISP-02, DISP-03, DISP-04, DISP-05, DISP-06, DISP-07, DISP-08, DISP-09, DISP-10]
+
+**Success Criteria** (what must be TRUE):
+1. Monitors enumerate from the registry with override state indicated
+2. Custom resolutions can be added, edited and deleted with full timing parameters
+3. A timing can be marked preferred/native
+4. A refresh-range descriptor can be added for VRR/FreeSync
+5. EDID override saves to the registry and can be restored to default
+6. Display driver can be restarted in place, with the black-screen escape documented
+7. Invalid timings are rejected before any write
+8. Elevation requirements are detected and explained
+
+**Plans:** 3 plans
+
+Plans:
+- [ ] 09-01: EDID/timing model and validation
+- [ ] 09-02: Monitor enumeration, EDID read/parse and registry override service
+- [ ] 09-03: Display page with timing editor and driver-restart action
+
+### Phase 10: Experimental, About & Tray Helper
+**Goal:** Finish the remaining pages and the tray-helper feature set.
+
+**Depends on:** Phase 9
+
+**Requirements:** [EXP-01, ABT-01, TRAY-01, TRAY-02, TRAY-03, TRAY-04]
+
+**Success Criteria** (what must be TRUE):
+1. Experimental page surfaces unfinished features behind a clear warning
+2. About page shows version, links and credits
+3. Region and full-screen screenshot capture work
+4. Screenshot location and format are configurable
+5. Taskbar hide/restore works and reverts cleanly
+6. Latency toggles apply and revert
+
+**Plans:** 2 plans
+
+Plans:
+- [ ] 10-01: Experimental and About pages
+- [ ] 10-02: Tray helper — screenshots, taskbar, latency
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Architecture Foundation | 1/1 | Complete | 2026-10-03 |
-| 2. Profile System | 2/2 | Complete | 2026-10-03 |
-| 3. GPU Governor Core | 2/2 | Complete | 2026-10-03 |
-| 4. GPU Governor Control | 1/2 | In progress | - |
-| 5. System Tweaks | 0/2 | Pending | - |
-| 6. Screenshots | 0/2 | Pending | - |
-| 7. Taskbar | 0/1 | Pending | - |
-| 8. Dashboard | 0/1 | Pending | - |
+| 1. Real Navigation Shell | 0/2 | Pending | - |
+| 2. Home & Vain Tools | 0/2 | Pending | - |
+| 3. General & System | 0/3 | Pending | - |
+| 4. Security, Performance & Power | 0/3 | Pending | - |
+| 5. Network, Sound, Affinity & Startup | 0/3 | Pending | - |
+| 6. Apps | 0/2 | Pending | - |
+| 7. Tools | 0/3 | Pending | - |
+| 8. NVIDIA DRS Editor | 0/3 | Pending | - |
+| 9. Display / EDID Editor | 0/3 | Pending | - |
+| 10. Experimental, About & Tray Helper | 0/2 | Pending | - |
 
 ---
-*Roadmap updated: 2026-10-03*
+*Roadmap rewritten: 2026-10-03 after ground-truth reverse engineering*
