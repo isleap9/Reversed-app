@@ -134,14 +134,14 @@ Plans:
 4. Affinity page can set CPU affinity for a running process and save the rule
 5. Startup page lists Run-key and scheduled-task entries, and can enable/disable/delete them
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 **Wave 1**
 - [x] 05-01: Network service (adapters, DNS, NTP, offloads) and Network page
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 05-02: Audio service and Sound page
+- [x] 05-02: Audio service and Sound page
 
 **Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 05-03: Affinity service and Startup service with their pages
@@ -271,7 +271,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Home & Vain Tools | 2/2 | Complete | 2026-10-03 |
 | 3. General & System | 3/3 | Complete | 2026-10-03 |
 | 4. Security, Performance & Power | 3/3 | Complete    | 2026-10-03 |
-| 5. Network, Sound, Affinity & Startup | 1/3 | In Progress|  |
+| 5. Network, Sound, Affinity & Startup | 2/3 | In Progress|  |
 | 6. Apps | 0/2 | Pending | - |
 | 7. Tools | 0/3 | Pending | - |
 | 8. NVIDIA DRS Editor | 0/3 | Pending | - |
