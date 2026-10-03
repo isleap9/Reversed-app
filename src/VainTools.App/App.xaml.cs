@@ -111,6 +111,7 @@ public partial class App : Application
         builder.Services.AddSingleton<IRegistryTweakService, RegistryTweakService>();
         builder.Services.AddSingleton<IProcessRunner, ProcessRunner>();
         builder.Services.AddSingleton<IPowerService, PowerService>();
+        builder.Services.AddSingleton<INetworkService, NetworkService>();
 
         // View models
         builder.Services.AddTransient<HomeViewModel>();
