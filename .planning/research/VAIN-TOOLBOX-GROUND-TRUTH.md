@@ -85,6 +85,39 @@ Enabled`, `DWM Low Latency`, `Power Management - Mode`, `Threaded Optimization`,
 `D3D12 Tiled Resources Batch Update VA Fences`, `Refresh Rate - Override`,
 `VRR Override Control`, `G-SYNC Enable`, `HDR` overrides.
 
+### GPU (the GPU page itself)
+Both monitoring **and** tuning are present — an earlier revision of this document
+wrongly claimed the app does not poll sensors. It does:
+
+- **NVIDIA**: `nvml.dll` (`C:\Program Files\NVIDIA Corporation\NVSMI\nvml.dll`),
+  `nvmlDeviceGetMemoryInfo`, `nvmlDeviceGetGpuMaxPcieLinkGeneration`
+- **AMD**: ADLX (`IADLXGPU1`, `IADLXGPUMetrics1`, `IADLXGPUTuningServices1`,
+  `IADLXManualVRAMTuning1/2`), `RadeonSoftware.exe`
+- Reads: `GPU Temperature`, `GPU Usage`, `GPU Voltage`, `Memory Clock (MHz)`,
+  `VRAM Clock`, `VRAM Type / Bandwidth`, `VRAM Usage`, `Memory Temperature`
+- Writes: `gpuOffset`, `gpuVoltage`, `nvFanRamp`, `gpuMinFreqMHz`/`gpuMaxFreqMHz`,
+  `gpuScaling`, `smartAccessMemory`, `variableGraphicsMemoryIndex`, VRAM tuning
+- Toggles: `Hardware Accelerated GPU Scheduling (HAGS)`, GPU scaling, Smart Access
+  Memory, Variable Graphics Memory, per-app `HKCU\Software\Microsoft\DirectX\UserGpuPreferences`
+- **GPU restart in place**: "Restart GPU", "Restarting GPU…", "Removing GPU device(s)
+  and audio bus", "The GPU driver has been successfully restarted."
+- Failure states: `No GPU Detected`, `Unknown GPU`, `Profile does not match this GPU`,
+  `Invalid NVIDIA profile parameters`, "Temperature target is not supported by this
+  GPU / driver", "Classic voltage boost is not supported by this GPU / driver"
+
+### Home page
+- WMI queries: `SELECT Name FROM Win32_Processor`,
+  `SELECT Manufacturer FROM Win32_BaseBoard`
+- Fields: `Manufacturer`, `Model`, `Driver Version`, `Unknown CPU/GPU/Motherboard/RAM`,
+  `Select driver version...`
+- `Windows Insider Program` toggle, `GPU Performance Counters for All Users`
+
+### Vain Tools page
+- `Restore Vain Defaults` — confirmation text: "The following settings will be changed
+  to Vain defaults:", covering **Sound, Security, Performance** sections
+- `Import .vain profile`, "Drop a .vain profile exported from Vain Toolbox."
+- Uses `taskkill.exe /f /im explorer.exe` + relaunch `explorer.exe` to apply shell tweaks
+
 ### GPU → Display
 **EDID override and custom resolution editor** — genuinely low-level:
 - Enumerate monitors from the registry (`*` marks a saved EDID override)

@@ -18,16 +18,16 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Home
 
-- [ ] **HOME-01**: Home shows system summary (OS, CPU, RAM, GPU, driver version)
-- [ ] **HOME-02**: Home shows quick actions for common operations
-- [ ] **HOME-03**: Home shows app version and update/status info
+- [x] **HOME-01**: Home shows system summary (OS, CPU, RAM, GPU, driver version)
+- [x] **HOME-02**: Home shows quick actions for common operations
+- [x] **HOME-03**: Home shows app version and update/status info
 
 ### Vain Tools (own settings)
 
-- [ ] **VAIN-01**: User can import a `.vain` profile file
-- [ ] **VAIN-02**: User can drag-and-drop a `.vain` file to import
-- [ ] **VAIN-03**: User can restore Vain defaults for the listed settings
-- [ ] **VAIN-04**: Invalid/foreign `.vain` files are rejected with a clear message
+- [x] **VAIN-01**: User can import a `.vain` profile file
+- [x] **VAIN-02**: User can drag-and-drop a `.vain` file to import
+- [~] **VAIN-03**: User can restore Vain defaults for the listed settings (confirmation flow implemented; applying needs Phases 4/5)
+- [x] **VAIN-04**: Invalid/foreign `.vain` files are rejected with a clear message
 
 ### GPU — NVIDIA DRS
 
@@ -184,8 +184,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | NAV-01 … NAV-06 | Phase 1 | Complete |
-| HOME-01 … HOME-03 | Phase 2 | Pending |
-| VAIN-01 … VAIN-04 | Phase 2 | Pending |
+| HOME-01 … HOME-03 | Phase 2 | Complete |
+| VAIN-01,02,04 | Phase 2 | Complete |
+| VAIN-03 | Phase 2 | Partial (apply deferred to Phases 4/5) |
 | GEN-01 … GEN-06 | Phase 3 | Pending |
 | SYS-01 … SYS-04 | Phase 3 | Pending |
 | SEC-01 … SEC-05 | Phase 4 | Pending |

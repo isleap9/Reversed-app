@@ -22,6 +22,7 @@ recognise it as Vain Toolbox — same pages, same grouping, same capabilities.
      real product and were retired (see Key Decisions). -->
 
 - ✓ Navigation shell with the real 28-page Vain Toolbox tree — Phase 1
+- ✓ Home page with live machine summary; `.vain` profile import with validation — Phase 2
 
 ### Active
 

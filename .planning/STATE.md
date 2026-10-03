@@ -4,9 +4,9 @@ name: Real Vain Toolbox Rebuild
 status: planning
 progress:
   phases_total: 10
-  phases_complete: 1
+  phases_complete: 2
   plans_total: 26
-  plans_complete: 2
+  plans_complete: 4
 ---
 
 # Vain Toolbox - Project State
@@ -16,22 +16,44 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-03)
 
 **Core value:** The full Vain Toolbox feature surface, reimplemented in WinUI 3 with a faithful navigation structure.
-**Current focus:** Phase 2 — Home & Vain Tools
+**Current focus:** Phase 3 — General & System
 
 ## Current Position
 
-Phase 1 of 10 — Real Navigation Shell
+Phase 2 of 10 — Home & Vain Tools
 Plan 2 of 2 — complete
-Status: Phase 1 complete; ready to plan Phase 2
+Status: Phase 2 complete; ready to plan Phase 3
 
 ```
-[==                                                ] 10%
+[====                                              ] 20%
 ```
 
 ## Session Tracking
 
 ### Last Updated
-- **Phase 1 complete:** real 28-page navigation shell built and verified
+- **Phase 2 complete:** Home page + `.vain` profile import, verified on real hardware
+
+### Phase 2 Outcome
+- `Services/SystemInfoService.cs` — WMI machine summary, per-field fault tolerant
+- `Services/VainProfileService.cs` — `.vain` parser/writer matching the recovered schema
+  (UTF-16 + BOM-less UTF-16 + UTF-8 sniffing; misspelled `Executeables` preserved)
+- `Features/Home/HomePage` — live CPU/motherboard/OS/RAM/GPU/driver cards + quick actions
+- `Features/VainTools/VainToolsPage` — picker import, drag-and-drop import,
+  restore-defaults confirmation, vain.zone link
+- `VainTools.Tests` now references `VainTools.App` (needed to test the services)
+- **113 tests pass** (was 99); 0 warnings / 0 errors
+- Runtime-verified on this machine: CPU "AMD Ryzen 7 5800X 8-Core Processor",
+  GPU "NVIDIA GeForce RTX 5070" driver 32.0.16.1714, RAM 31.9 GB;
+  a valid `.vain` imported as 1 profile / 3 settings / 3 DWORDs, a malformed one
+  rejected with the user-facing message
+
+### Phase 2 deviations (honest scope)
+- **VAIN-03 is partial.** The restore-defaults confirmation flow and the documented
+  section list (Sound, Security, Performance) are implemented, but *applying* the
+  defaults needs the Sound (Phase 5), Security (Phase 4) and Performance (Phase 4)
+  services. The UI says so explicitly instead of pretending to have changed anything.
+- Import parses, validates and persists profiles but does not apply them to the
+  NVIDIA driver — that is Phase 8 (DRS interop).
 
 ### Phase 1 Outcome
 - 28 feature pages scaffolded under `Features/` in the real folder layout
@@ -95,6 +117,18 @@ overwriting files only partially read — delete and rewrite, or use `patch`.
   against the assembly (see `MainWindow.PageTypesByTag`).
 - Prefer `patch` over `write_file` for edits — `write_file` refuses files whose full
   contents this session has not read, and the guard is easy to trip.
+- **`x:Bind` inside a `DataTemplate` is scoped to the template's `x:DataType`.** A
+  template typed to a row model cannot reach the page's ViewModel, so
+  `{x:Bind ViewModel.SomeCommand}` fails to compile with a *masked* WMC9999. Put the
+  value in the element's `Tag` and handle the event in code-behind instead.
+- **Encoding sniffing for XML**: `XDocument.Load(stream)` trusts the
+  `encoding=` declaration, so a UTF-8 file declaring `utf-16` mis-decodes. Read bytes,
+  sniff BOM / NUL bytes, decode to string, then `XDocument.Parse(text)`.
+- **`XmlWriter` async**: `FlushAsync` throws `InvalidOperationException` unless
+  `XmlWriterSettings.Async = true`.
+- **Referencing the app project from the test project makes WinRT resolvable**, which
+  can invalidate tests that asserted a `COMException` caused by the old host limitation
+  rather than real behaviour. Re-check such tests when adding the reference.
 
 ## Recent Decisions
 
@@ -121,7 +155,7 @@ overwriting files only partially read — delete and rewrite, or use `patch`.
 
 ## Session Continuity
 
-Resume with: `/gsd-plan-phase 2`
+Resume with: `/gsd-plan-phase 3`
 
 ---
 *This state file tracks progress between development sessions.*

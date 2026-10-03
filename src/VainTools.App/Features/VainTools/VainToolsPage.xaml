@@ -5,35 +5,111 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:local="using:VainTools.App.Features.VainTools"
+    xmlns:models="using:VainTools.App.Models"
     mc:Ignorable="d">
 
-    <Grid Padding="24">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <ScrollViewer>
+        <Grid Padding="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0"
-                   Text="Vain Tools"
-                   Style="{StaticResource TitleTextBlockStyle}"/>
+            <StackPanel Grid.Row="0">
+                <TextBlock Text="Vain Tools" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Margin="0,4,0,0"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                           Text="Vain Toolbox's own settings and profile import." />
+            </StackPanel>
 
-        <TextBlock Grid.Row="1"
-                   Margin="0,8,0,0"
-                   TextWrapping="Wrap"
-                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                   Text="Vain Toolbox's own settings, including .vain profile import and restore-defaults."/>
+            <!-- Import -->
+            <Border Grid.Row="1" Margin="0,16,0,0" Padding="16" CornerRadius="8"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="Profile" Style="{StaticResource SubtitleTextBlockStyle}" />
 
-        <Border Grid.Row="2"
-                Margin="0,16,0,0"
-                Padding="16"
-                CornerRadius="8"
-                VerticalAlignment="Top"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                BorderThickness="1">
-            <TextBlock Text="Not implemented yet."
-                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
-        </Border>
-    </Grid>
+                    <!-- Drag-and-drop target -->
+                    <Border x:Name="DropZone"
+                            Margin="0,12,0,0"
+                            Padding="24"
+                            CornerRadius="6"
+                            AllowDrop="True"
+                            DragOver="OnDropZoneDragOver"
+                            DragLeave="OnDropZoneDragLeave"
+                            Drop="OnDropZoneDrop"
+                            BorderThickness="2"
+                            BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                            Background="{ThemeResource ControlFillColorDefaultBrush}">
+                        <StackPanel HorizontalAlignment="Center" Spacing="6">
+                            <FontIcon Glyph="&#xE8B5;" FontSize="24" Opacity="0.7" />
+                            <TextBlock Text="Drop a .vain profile exported from Vain Toolbox."
+                                       HorizontalAlignment="Center"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <TextBlock Text="or"
+                                       HorizontalAlignment="Center"
+                                       FontSize="11"
+                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                            <Button Content="Import .vain profile"
+                                    HorizontalAlignment="Center"
+                                    Command="{x:Bind ViewModel.ImportProfileCommand}" />
+                        </StackPanel>
+                    </Border>
+
+                    <TextBlock Margin="0,12,0,0"
+                               Text="{x:Bind ViewModel.LastImportSummary, Mode=OneWay}"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+
+                    <!-- Imported profile list -->
+                    <ItemsControl ItemsSource="{x:Bind ViewModel.ImportedProfiles, Mode=OneWay}"
+                                  Margin="0,8,0,0">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="models:VainProfile">
+                                <Border Margin="0,0,0,6" Padding="10" CornerRadius="4"
+                                        Background="{ThemeResource ControlFillColorDefaultBrush}">
+                                    <StackPanel>
+                                        <TextBlock Text="{x:Bind Executables.Count}"
+                                                   FontSize="11" Opacity="0.7" />
+                                        <TextBlock Text="{x:Bind Settings.Count}"
+                                                   FontWeight="SemiBold" />
+                                        <TextBlock Text="settings"
+                                                   FontSize="11" Opacity="0.7" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <!-- Restore defaults -->
+            <Border Grid.Row="2" Margin="0,16,0,0" Padding="16" CornerRadius="8"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="Restore Vain Defaults" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock Margin="0,6,0,0"
+                               TextWrapping="Wrap"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Text="{x:Bind ViewModel.RestoreDefaultsDescription}" />
+                    <Button Margin="0,12,0,0"
+                            Content="Restore Vain Defaults"
+                            Command="{x:Bind ViewModel.RestoreDefaultsCommand}" />
+                </StackPanel>
+            </Border>
+
+            <!-- Footer -->
+            <StackPanel Grid.Row="3" Margin="0,20,0,0">
+                <TextBlock FontSize="12"
+                           Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                           Text="{x:Bind ViewModel.StatusMessage, Mode=OneWay}" />
+                <HyperlinkButton Margin="0,4,0,0"
+                                 Padding="0"
+                                 Content="Visit vain.zone for more tools"
+                                 NavigateUri="https://vain.zone" />
+            </StackPanel>
+        </Grid>
+    </ScrollViewer>
 </Page>

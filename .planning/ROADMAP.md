@@ -15,7 +15,7 @@ of their depth.
 ## Phases
 
 - [x] **Phase 1: Real Navigation Shell** - 28-page tree, grouped, routed, DI-resolved
-- [ ] **Phase 2: Home & Vain Tools** - System summary, quick actions, `.vain` import, restore defaults
+- [x] **Phase 2: Home & Vain Tools** - System summary, quick actions, `.vain` import, restore defaults
 - [ ] **Phase 3: General & System** - Explorer, context menu, visual, date/time, visibility, system tweaks
 - [ ] **Phase 4: Security, Performance & Power** - Security toggles, timer/MPO, power plan editor
 - [ ] **Phase 5: Network, Sound, Affinity & Startup** - Adapters/DNS/NTP, audio, CPU affinity, startup entries
@@ -65,8 +65,8 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
-- [ ] 02-01: Implement system-info service and Home page
-- [ ] 02-02: Implement `.vain` import pipeline and restore-defaults flow
+- [x] 02-01: Implement system-info service and Home page
+- [x] 02-02: Implement `.vain` import pipeline and restore-defaults flow
 
 ### Phase 3: General & System
 **Goal:** Implement the General sub-pages and the System tweak page with apply/revert.
@@ -248,7 +248,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Real Navigation Shell | 2/2 | Complete | 2026-10-03 |
-| 2. Home & Vain Tools | 0/2 | Pending | - |
+| 2. Home & Vain Tools | 2/2 | Complete | 2026-10-03 |
 | 3. General & System | 0/3 | Pending | - |
 | 4. Security, Performance & Power | 0/3 | Pending | - |
 | 5. Network, Sound, Affinity & Startup | 0/3 | Pending | - |

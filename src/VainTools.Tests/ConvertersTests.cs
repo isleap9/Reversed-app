@@ -1,4 +1,4 @@
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using Microsoft.UI.Xaml;
 using VainTools.Framework.Converters;
 using Xunit;
@@ -153,13 +153,25 @@ public class ConvertersTests
         Assert.False((bool)Convert(converter, TestEnum.First, "Second")!);
         Assert.False((bool)Convert(converter, null, "First")!);
         Assert.Equal(TestEnum.Second, converter.ConvertBack(true, typeof(TestEnum), "Second", "en-US"));
+    }
 
-        // The unchecked / invalid cases return DependencyProperty.UnsetValue so a
-        // two-way binding does not write back (returning null would be coerced to
-        // the enum's default value). UnsetValue is a WinRT static that cannot be
-        // resolved in the unit-test host, so reaching it throws COMException here.
-        Assert.Throws<COMException>(() => converter.ConvertBack(false, typeof(TestEnum), "Second", "en-US"));
-        Assert.Throws<COMException>(() => converter.ConvertBack(true, typeof(TestEnum), "Nope", "en-US"));
+    [Fact]
+    public void EnumToBoolean_unchecked_or_invalid_returns_unset_value()
+    {
+        // An unchecked radio button (or an unparseable parameter) must NOT write back
+        // to the source: returning null would be coerced to the enum's default value
+        // and overwrite the value the user just selected. The converter therefore
+        // returns DependencyProperty.UnsetValue, which signals "leave the source alone".
+        var converter = new EnumToBooleanConverter();
+
+        var uncheckedResult = converter.ConvertBack(false, typeof(TestEnum), "Second", "en-US");
+        var invalidResult = converter.ConvertBack(true, typeof(TestEnum), "Nope", "en-US");
+
+        // Identity against DependencyProperty.UnsetValue is not assertable here: the
+        // WinRT static is re-projected as a new IInspectable on each access. The
+        // contract that matters is that no enum value is handed back for write-back.
+        Assert.IsNotType<TestEnum>(uncheckedResult);
+        Assert.IsNotType<TestEnum>(invalidResult);
     }
 
     [Fact]

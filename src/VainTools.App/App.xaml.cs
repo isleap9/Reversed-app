@@ -1,4 +1,4 @@
-using CommunityToolkit.Mvvm.Messaging;
+﻿using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -6,6 +6,8 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.Windows.AppLifecycle;
+using VainTools.App.Services;
+using VainTools.App.ViewModels;
 using VainTools.Framework.Logging;
 using VainTools.Framework;
 using VainTools.Framework.Messaging;
@@ -102,6 +104,14 @@ public partial class App : Application
 
         // Main window.
         builder.Services.AddSingleton<MainWindow>();
+
+        // App services.
+        builder.Services.AddSingleton<ISystemInfoService, SystemInfoService>();
+        builder.Services.AddSingleton<IVainProfileService, VainProfileService>();
+
+        // View models
+        builder.Services.AddTransient<HomeViewModel>();
+        builder.Services.AddTransient<VainToolsViewModel>();
 
         // Navigation: pages are created through the DI container.
         builder.Services.AddSingleton<INavigationService>(sp =>
