@@ -1,0 +1,16 @@
+<Page x:Class="VainTools.Pages.ProfilesPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer>
+        <StackPanel Spacing="12" Width="600">
+            <TextBlock Text="Profiles" FontSize="24" FontWeight="Bold"/>
+            <Button Content="New Profile" HorizontalAlignment="Left"/>
+            <ListView x:Name="ProfilesList" Height="300">
+                <ListViewItem Content="Factory Default"/>
+                <ListViewItem Content="Gaming"/>
+                <ListViewItem Content="Silent"/>
+            </ListView>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

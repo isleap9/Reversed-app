@@ -1,0 +1,21 @@
+# Build outputs
+bin/
+obj/
+*.user
+
+# IDE
+.vs/
+.vscode/
+*.suo
+*.userosscache
+
+# OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# GSD
+.planning/cache/
+.planning/todos/pending/
+.planning/todos/completed/
