@@ -532,9 +532,53 @@ public static class TweakCatalog
         },
     ];
 
+    /// <summary>Network offload tweaks (NetworkPage). Per-interface GUID paths.</summary>
+    public static IReadOnlyList<RegistryTweak> Network { get; } =
+    [
+        new()
+        {
+            Id = "network-lso-v2-ipv4",
+            Name = "Large Send Offload v2 (IPv4)",
+            Description = "Enable Large Send Offload v2 for IPv4 to reduce CPU usage during network transfers.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\{GUID}",
+            ValueName = "LsoV2Enabled",
+            EnabledValue = 1,
+            DisabledValue = 0,
+            RequiresAdmin = true,
+            DefaultWhenUnset = TweakState.Enabled,
+        },
+        new()
+        {
+            Id = "network-rss",
+            Name = "Receive Side Scaling",
+            Description = "Enable Receive Side Scaling to distribute network processing across CPU cores.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\{GUID}",
+            ValueName = "RSSEnabled",
+            EnabledValue = 1,
+            DisabledValue = 0,
+            RequiresAdmin = true,
+            DefaultWhenUnset = TweakState.Enabled,
+        },
+        new()
+        {
+            Id = "network-checksum-offload-ipv4",
+            Name = "TCP Checksum Offload (IPv4)",
+            Description = "Enable TCP checksum offload for IPv4 to reduce CPU usage.",
+            Hive = RegistryHive.LocalMachine,
+            KeyPath = @"SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\{GUID}",
+            ValueName = "TCPChecksumOffloadIPv4",
+            EnabledValue = 1,
+            DisabledValue = 0,
+            RequiresAdmin = true,
+            DefaultWhenUnset = TweakState.Enabled,
+        },
+    ];
+
     /// <summary>Every tweak, flattened — used by the General overview page.</summary>
     public static IReadOnlyList<RegistryTweak> All { get; } =
-        Explorer.Concat(ContextMenu).Concat(Visual).Concat(System).Concat(Security).Concat(Performance).ToList();
+        Explorer.Concat(ContextMenu).Concat(Visual).Concat(System).Concat(Security).Concat(Performance).Concat(Network).ToList();
 
     /// <summary>Lookup by <see cref="RegistryTweak.Id"/>.</summary>
     public static RegistryTweak? Find(string id) =>
