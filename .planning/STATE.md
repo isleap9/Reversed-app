@@ -4,9 +4,9 @@ name: Real Vain Toolbox Rebuild
 status: planning
 progress:
   phases_total: 10
-  phases_complete: 0
+  phases_complete: 1
   plans_total: 26
-  plans_complete: 0
+  plans_complete: 2
 ---
 
 # Vain Toolbox - Project State
@@ -16,22 +16,31 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-03)
 
 **Core value:** The full Vain Toolbox feature surface, reimplemented in WinUI 3 with a faithful navigation structure.
-**Current focus:** Phase 1 — Real Navigation Shell
+**Current focus:** Phase 2 — Home & Vain Tools
 
 ## Current Position
 
 Phase 1 of 10 — Real Navigation Shell
-Plan 0 of 2 — not started
-Status: Ready to plan
+Plan 2 of 2 — complete
+Status: Phase 1 complete; ready to plan Phase 2
 
 ```
-[                                                  ] 0%
+[==                                                ] 10%
 ```
 
 ## Session Tracking
 
 ### Last Updated
-- **Milestone reset:** v1.0 (guessed features) retired; v2.0 planned from ground truth
+- **Phase 1 complete:** real 28-page navigation shell built and verified
+
+### Phase 1 Outcome
+- 28 feature pages scaffolded under `Features/` in the real folder layout
+- `Navigation/NavigationCatalog.cs` — grouped nav model (10 groups, nested children)
+- `MainWindow.xaml` — NavigationView rebuilt with the real grouped tree; 28 nav Tags
+- Retired `Views/`, `Controls/`, `ViewModels/`, `Services/`, `Models/`, `Converters/`
+  and the old `NavigationItem` record, plus their DI registrations
+- Verified: 0 warnings / 0 errors, 99 tests pass, **all 28 pages navigate at runtime**
+  (verified by a temporary instrumented walk that was removed after the run)
 
 ### What Changed
 The previous milestone built six pages — Dashboard, GpuGovernor, Profiles,
@@ -71,6 +80,22 @@ cp src/VainTools.App/obj/Debug/net10.0-windows10.0.26100.0/win-x64/input.json "$
 JSON paths must be native Windows paths. Note that a `write_file` guard blocks
 overwriting files only partially read — delete and rewrite, or use `patch`.
 
+### WinUI/XAML build pitfalls hit in Phase 1
+- **`WMC9999: Object reference not set to an instance of an object`** during markup
+  compile is usually a *cascade* from a failed C# compile — the XAML compiler runs
+  pass 2 with no `LocalAssembly`, then throws. **Always fix the C# errors first and
+  rebuild before investigating the XAML error.** The accompanying `WMC1509`
+  ("No LocalAssembly parameter given during MarkupCompilePass2") is the tell.
+- **`WMC9997: An error occurred while parsing EntityName`** — a bare `&` in a XAML
+  attribute. Write `&amp;` (e.g. `Text="Date &amp; Time"`).
+- **`App.xaml.cs` must keep its UTF-8 BOM.** Rewriting it without a BOM broke the XAML
+  compiler. Use `patch` for edits to that file, or write with `encoding="utf-8-sig"`.
+- **WinUI has no `x:Type` markup extension.** To put a page type in XAML (e.g. a nav
+  `Tag`), write the fully-qualified type name as a string and resolve it at runtime
+  against the assembly (see `MainWindow.PageTypesByTag`).
+- Prefer `patch` over `write_file` for edits — `write_file` refuses files whose full
+  contents this session has not read, and the guard is easy to trip.
+
 ## Recent Decisions
 
 | Decision | Rationale |
@@ -96,7 +121,7 @@ overwriting files only partially read — delete and rewrite, or use `patch`.
 
 ## Session Continuity
 
-Resume with: `/gsd-plan-phase 1`
+Resume with: `/gsd-plan-phase 2`
 
 ---
 *This state file tracks progress between development sessions.*

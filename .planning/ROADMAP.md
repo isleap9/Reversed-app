@@ -14,7 +14,7 @@ of their depth.
 
 ## Phases
 
-- [ ] **Phase 1: Real Navigation Shell** - 30-page tree, grouped, routed, DI-resolved
+- [x] **Phase 1: Real Navigation Shell** - 28-page tree, grouped, routed, DI-resolved
 - [ ] **Phase 2: Home & Vain Tools** - System summary, quick actions, `.vain` import, restore defaults
 - [ ] **Phase 3: General & System** - Explorer, context menu, visual, date/time, visibility, system tweaks
 - [ ] **Phase 4: Security, Performance & Power** - Security toggles, timer/MPO, power plan editor
@@ -37,7 +37,7 @@ of their depth.
 **Success Criteria** (what must be TRUE):
 1. Nav pane shows the real page tree in the real grouping order
 2. Nested groups (General, Apps, GPU, Tools) expand to their sub-pages
-3. Every one of the 30 pages is reachable and renders without error
+3. Every one of the 28 feature pages is reachable and renders without error
 4. The previously guessed pages are removed and no longer referenced
 5. Navigation state is reflected correctly on startup and after each navigation
 6. Solution builds with 0 warnings / 0 errors and the existing test suite still passes
@@ -45,8 +45,8 @@ of their depth.
 **Plans:** 2 plans
 
 Plans:
-- [ ] 01-01: Define the real navigation model and page scaffolding (30 pages, grouped)
-- [ ] 01-02: Rewire the shell (MainWindow nav, DI registration) and retire the old pages
+- [x] 01-01: Define the real navigation model and page scaffolding (28 pages, grouped)
+- [x] 01-02: Rewire the shell (MainWindow nav, DI registration) and retire the old pages
 
 ### Phase 2: Home & Vain Tools
 **Goal:** Deliver the landing page and the app's own settings, including `.vain` profile import.
@@ -247,7 +247,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Real Navigation Shell | 0/2 | Pending | - |
+| 1. Real Navigation Shell | 2/2 | Complete | 2026-10-03 |
 | 2. Home & Vain Tools | 0/2 | Pending | - |
 | 3. General & System | 0/3 | Pending | - |
 | 4. Security, Performance & Power | 0/3 | Pending | - |

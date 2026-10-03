@@ -21,7 +21,7 @@ recognise it as Vain Toolbox — same pages, same grouping, same capabilities.
 <!-- Nothing is validated yet: the previous milestone's features did not match the
      real product and were retired (see Key Decisions). -->
 
-(None yet — ship to validate)
+- ✓ Navigation shell with the real 28-page Vain Toolbox tree — Phase 1
 
 ### Active
 

@@ -9,12 +9,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Shell & Navigation
 
-- [ ] **NAV-01**: App shell presents the real Vain Toolbox navigation tree (30 pages)
-- [ ] **NAV-02**: Navigation groups match the real product (Home, Vain Tools, General, System, Security, Experimental, Performance, Apps, Sound, Affinity, Startup, Power Editor, GPU, Network, Tools, About)
-- [ ] **NAV-03**: Nested groups expand to sub-pages (General, Apps, GPU, Tools)
-- [ ] **NAV-04**: Every page is reachable and renders without error
-- [ ] **NAV-05**: Selected page is reflected in the nav pane on startup and after navigation
-- [ ] **NAV-06**: Pages resolve through DI and are unit-testable
+- [x] **NAV-01**: App shell presents the real Vain Toolbox navigation tree (30 pages)
+- [x] **NAV-02**: Navigation groups match the real product (Home, Vain Tools, General, System, Security, Experimental, Performance, Apps, Sound, Affinity, Startup, Power Editor, GPU, Network, Tools, About)
+- [x] **NAV-03**: Nested groups expand to sub-pages (General, Apps, GPU, Tools)
+- [x] **NAV-04**: Every page is reachable and renders without error
+- [x] **NAV-05**: Selected page is reflected in the nav pane on startup and after navigation
+- [x] **NAV-06**: Pages resolve through DI and are unit-testable
 
 ### Home
 
@@ -183,7 +183,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| NAV-01 … NAV-06 | Phase 1 | Pending |
+| NAV-01 … NAV-06 | Phase 1 | Complete |
 | HOME-01 … HOME-03 | Phase 2 | Pending |
 | VAIN-01 … VAIN-04 | Phase 2 | Pending |
 | GEN-01 … GEN-06 | Phase 3 | Pending |
