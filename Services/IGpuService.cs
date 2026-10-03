@@ -51,6 +51,11 @@ public interface IGpuService
     Task<int> GetPowerConsumptionAsync(IntPtr deviceHandle);
 
     /// <summary>
+    /// Gets the current GPU utilization percentage.
+    /// </summary>
+    Task<int> GetUtilizationAsync(IntPtr deviceHandle);
+
+    /// <summary>
     /// Gets the current power limit in watts.
     /// </summary>
     Task<int> GetPowerLimitAsync(IntPtr deviceHandle);
