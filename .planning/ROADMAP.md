@@ -28,6 +28,7 @@ of their depth.
 ## Phase Details
 
 ### Phase 1: Real Navigation Shell
+
 **Goal:** Replace the six guessed pages with the real 30-page Vain Toolbox navigation tree, grouped and routed.
 
 **Depends on:** Nothing (first phase)
@@ -49,6 +50,7 @@ Plans:
 - [x] 01-02: Rewire the shell (MainWindow nav, DI registration) and retire the old pages
 
 ### Phase 2: Home & Vain Tools
+
 **Goal:** Deliver the landing page and the app's own settings, including `.vain` profile import.
 
 **Depends on:** Phase 1
@@ -69,6 +71,7 @@ Plans:
 - [x] 02-02: Implement `.vain` import pipeline and restore-defaults flow
 
 ### Phase 3: General & System
+
 **Goal:** Implement the General sub-pages and the System tweak page with apply/revert.
 
 **Depends on:** Phase 2
@@ -90,6 +93,7 @@ Plans:
 - [x] 03-03: Date & Time, Settings Visibility and System pages
 
 ### Phase 4: Security, Performance & Power
+
 **Goal:** Implement security toggles, performance tuning and the power plan editor.
 
 **Depends on:** Phase 3
@@ -106,11 +110,17 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
+**Wave 1**
 - [ ] 04-01: Security service (Defender/VBS/blocklist) and Security page
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 04-02: Performance service (timer, MPO, GPU scheduling) and Performance page
+
+**Wave 3** *(blocked on Wave 2 completion)*
 - [ ] 04-03: Power plan service (powercfg) and Power Editor page
 
 ### Phase 5: Network, Sound, Affinity & Startup
+
 **Goal:** Implement the networking, audio, CPU affinity and startup-management pages.
 
 **Depends on:** Phase 4
@@ -132,6 +142,7 @@ Plans:
 - [ ] 05-03: Affinity service and Startup service with their pages
 
 ### Phase 6: Apps
+
 **Goal:** Implement app and package management across the four Apps sub-pages.
 
 **Depends on:** Phase 5
@@ -151,6 +162,7 @@ Plans:
 - [ ] 06-02: Store integration and Store page
 
 ### Phase 7: Tools
+
 **Goal:** Implement Device Cleaner, Drive Scanner and Driver Manager.
 
 **Depends on:** Phase 6
@@ -172,6 +184,7 @@ Plans:
 - [ ] 07-03: Driver Manager (pnputil wrapper) and page
 
 ### Phase 8: NVIDIA DRS Editor
+
 **Goal:** Implement the flagship NVIDIA driver-settings editor over `nvapi64.dll`.
 
 **Depends on:** Phase 7
@@ -196,6 +209,7 @@ Plans:
 - [ ] 08-03: Staged-change engine, readback verification and `.vain` export
 
 ### Phase 9: Display / EDID Editor
+
 **Goal:** Implement the monitor EDID override and custom-resolution editor.
 
 **Depends on:** Phase 8
@@ -220,6 +234,7 @@ Plans:
 - [ ] 09-03: Display page with timing editor and driver-restart action
 
 ### Phase 10: Experimental, About & Tray Helper
+
 **Goal:** Finish the remaining pages and the tray-helper feature set.
 
 **Depends on:** Phase 9

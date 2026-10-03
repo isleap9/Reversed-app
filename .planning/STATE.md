@@ -1,12 +1,17 @@
 ---
+gsd_state_version: "1.0"
 milestone: v2.0
-name: Real Vain Toolbox Rebuild
-status: planning
+status: executing
+stopped_at: Phase 4 UI-SPEC approved
+last_updated: "2026-10-03T14:19:18.811Z"
+state_head: d95ebe1876d5827e0336930c141b28f63cea8dcb
 progress:
-  phases_total: 10
-  phases_complete: 3
-  plans_total: 26
-  plans_complete: 7
+  total_phases: 10
+  completed_phases: 3
+  total_plans: 5
+  completed_plans: 0
+name: Real Vain Toolbox Rebuild
+current_phase_name: Security, Performance & Power
 ---
 
 # Vain Toolbox - Project State
@@ -22,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-10-03)
 
 Phase 3 of 10 — General & System
 Plan 3 of 3 — complete
-Status: Phase 3 complete; ready to plan Phase 4
+Status: Ready to execute
 
 ```
 [======                                            ] 30%
@@ -31,9 +36,11 @@ Status: Phase 3 complete; ready to plan Phase 4
 ## Session Tracking
 
 ### Last Updated
+
 - **Phase 3 complete:** registry tweak engine + 7 General/System pages, verified
 
 ### Phase 3 Outcome
+
 - `Models/RegistryTweak.cs` + `Services/RegistryTweakService.cs` — one engine serving
   every toggle: read / apply / revert, elevation detection, 64-bit-then-32-bit registry
   view fallback, `RemoveKeyWhenDisabled` for key-presence switches, and
@@ -47,6 +54,7 @@ Status: Phase 3 complete; ready to plan Phase 4
   apply→read→revert round-trip on a sandbox key returned Unset→Enabled→Disabled
 
 ### Phase 3 notes
+
 - The test host runs **elevated**, so the admin-refusal path is covered by an
   assertion that branches on `IsElevated` rather than assuming non-elevation.
 - Reading the catalog on this machine showed most tweaks as `Unset` (the OS default
@@ -54,6 +62,7 @@ Status: Phase 3 complete; ready to plan Phase 4
   `DefaultWhenUnset` exists.
 
 ### Phase 2 Outcome
+
 - `Services/SystemInfoService.cs` — WMI machine summary, per-field fault tolerant
 - `Services/VainProfileService.cs` — `.vain` parser/writer matching the recovered schema
   (UTF-16 + BOM-less UTF-16 + UTF-8 sniffing; misspelled `Executeables` preserved)
@@ -68,6 +77,7 @@ Status: Phase 3 complete; ready to plan Phase 4
   rejected with the user-facing message
 
 ### Phase 2 deviations (honest scope)
+
 - **VAIN-03 is partial.** The restore-defaults confirmation flow and the documented
   section list (Sound, Security, Performance) are implemented, but *applying* the
   defaults needs the Sound (Phase 5), Security (Phase 4) and Performance (Phase 4)
@@ -76,6 +86,7 @@ Status: Phase 3 complete; ready to plan Phase 4
   NVIDIA driver — that is Phase 8 (DRS interop).
 
 ### Phase 1 Outcome
+
 - 28 feature pages scaffolded under `Features/` in the real folder layout
 - `Navigation/NavigationCatalog.cs` — grouped nav model (10 groups, nested children)
 - `MainWindow.xaml` — NavigationView rebuilt with the real grouped tree; 28 nav Tags
@@ -85,6 +96,7 @@ Status: Phase 3 complete; ready to plan Phase 4
   (verified by a temporary instrumented walk that was removed after the run)
 
 ### What Changed
+
 The previous milestone built six pages — Dashboard, GpuGovernor, Profiles,
 SystemTweaks, Screenshots, Taskbar — from a *guessed* feature list. Static analysis
 of the shipped `Vain Toolbox.exe` proved none of those pages exist in the real
@@ -92,11 +104,13 @@ product. PROJECT.md, REQUIREMENTS.md and ROADMAP.md were rewritten against
 `.planning/research/VAIN-TOOLBOX-GROUND-TRUTH.md`.
 
 ### Build Status
+
 - `dotnet build --no-incremental` — succeeded, **0 warnings / 0 errors**
 - `dotnet test` — 99 passed / 0 failed
 - App verified to launch (`VainTools.App.exe`, window "Vain Tools", Responding=True)
 
 ### Resolved Build Issues (still relevant)
+
 1. **WMC9999 "Could not find any resources appropriate for the specified culture"**
    was a *masked* error — the WinUI markup compiler failed while formatting a
    binding warning, so the real error was hidden. Actual causes:
@@ -110,6 +124,7 @@ product. PROJECT.md, REQUIREMENTS.md and ROADMAP.md were rewritten against
    **Use partial properties for all new ViewModels.**
 
 ### Debugging Note — masked XAML errors
+
 `WMC9999` on this stack is often masked. To see the real error, run the XAML compiler
 directly against the generated input and read its JSON output:
 
@@ -117,12 +132,16 @@ directly against the generated input and read its JSON output:
 XAMLCOMPILER=~/.nuget/packages/microsoft.windowsappsdk.winui/2.3.0/tools/net472/XamlCompiler.exe
 cp src/VainTools.App/obj/Debug/net10.0-windows10.0.26100.0/win-x64/input.json "$HOME/xctest/in.json"
 "$XAMLCOMPILER" 'C:\Users\<user>\xctest\in.json' 'C:\Users\<user>\xctest\out.json'
+
 # inspect MSBuildLogEntries in out.json for entries with Type != 0
+
 ```
+
 JSON paths must be native Windows paths. Note that a `write_file` guard blocks
 overwriting files only partially read — delete and rewrite, or use `patch`.
 
 ### WinUI/XAML build pitfalls hit in Phase 1
+
 - **`WMC9999: Object reference not set to an instance of an object`** during markup
   compile is usually a *cascade* from a failed C# compile — the XAML compiler runs
   pass 2 with no `LocalAssembly`, then throws. **Always fix the C# errors first and
@@ -182,6 +201,10 @@ overwriting files only partially read — delete and rewrite, or use `patch`.
   sit behind explicit confirmation (`safety.always_confirm_destructive`).
 
 ## Session Continuity
+
+**Last session:** 2026-10-03T13:44:18.070Z
+**Stopped at:** Phase 4 UI-SPEC approved
+**Resume file:** .planning/phases/04-security-performance-power/04-UI-SPEC.md
 
 Resume with: `/gsd-plan-phase 4`
 
