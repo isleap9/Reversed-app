@@ -1,47 +1,70 @@
 using Microsoft.UI.Xaml.Controls;
-using VainTools.Models;
-using VainTools.Modules;
+using VainTools.Profiles;
+using VainTools.Services;
 
 namespace VainTools.Pages;
 
+/// <summary>
+/// Code-behind for ProfilesPage.
+/// Sets up the DataContext with the ViewModel and handles factory preset button clicks.
+/// </summary>
 public sealed partial class ProfilesPage : Page
 {
+    /// <summary>
+    /// The ViewModel instance for this page.
+    /// </summary>
+    public ProfileViewModel ViewModel { get; private set; }
+
     public ProfilesPage()
     {
         this.InitializeComponent();
-        LoadProfiles();
+
+        // Create the ViewModel with the profile service
+        var profileService = new ProfileService();
+        ViewModel = new ProfileViewModel(profileService);
+
+        // Set the DataContext for data binding
+        this.DataContext = ViewModel;
     }
 
-    private void LoadProfiles()
+    /// <summary>
+    /// Handles the Factory Default preset button click.
+    /// </summary>
+    private async void FactoryDefaultButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
-        var profiles = GovernorModule.GetProfiles();
-        ProfilesList.ItemsSource = profiles;
+        await ApplyPresetByIdAsync(0);
     }
 
-    private void AddProfileButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    /// <summary>
+    /// Handles the Gaming preset button click.
+    /// </summary>
+    private async void GamingButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
-        var profiles = GovernorModule.GetProfiles();
-        profiles.Add(new GpuProfile { Name = "New Profile", ActiveProfileId = profiles.Count, StartupProfileId = profiles.Count });
-        ProfilesList.ItemsSource = null;
-        ProfilesList.ItemsSource = profiles;
+        await ApplyPresetByIdAsync(1);
     }
 
-    private void DeleteProfileButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
+    /// <summary>
+    /// Handles the Silent preset button click.
+    /// </summary>
+    private async void SilentButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
     {
-        if (ProfilesList.SelectedItem is GpuProfile profile)
+        await ApplyPresetByIdAsync(2);
+    }
+
+    /// <summary>
+    /// Applies a preset profile by its ID.
+    /// </summary>
+    /// <param name="profileId">The profile ID to apply.</param>
+    private async System.Threading.Tasks.Task ApplyPresetByIdAsync(int profileId)
+    {
+        var service = new ProfileService();
+        var profile = await service.GetProfileAsync(profileId);
+
+        if (profile != null)
         {
-            var profiles = GovernorModule.GetProfiles();
-            profiles.Remove(profile);
-            ProfilesList.ItemsSource = null;
-            ProfilesList.ItemsSource = profiles;
-        }
-    }
-
-    private void ApplyProfileButton_Click(object sender, Microsoft.UI.Xaml.RoutedEventArgs e)
-    {
-        if (ProfilesList.SelectedItem is GpuProfile profile)
-        {
-            GovernorModule.ApplyProfile(profile);
+            ViewModel.SelectedProfile = profile;
+            await service.ApplyProfileAsync(profile);
+            await service.SetActiveProfileAsync(profileId);
         }
     }
 }

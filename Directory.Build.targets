@@ -1,0 +1,4 @@
+<Project>
+  <!-- Override ExpandPriContent to work around .NET 10 SDK / Windows App SDK 1.5 compatibility issue -->
+  <Target Name="ExpandPriContent" />
+</Project>

@@ -12,7 +12,11 @@
     <PublishReadyToRun>false</PublishReadyToRun>
     <EnableMsixTooling>false</EnableMsixTooling>
     <UseXamlCompilerExecutable>false</UseXamlCompilerExecutable>
+    <GeneratePriConfiguration>false</GeneratePriConfiguration>
   </PropertyGroup>
+
+  <!-- Override PRI generation target to work around .NET 10 SDK compatibility issue -->
+  <Target Name="ExpandPriContent" Condition="false" />
 
   <ItemGroup>
     <PackageReference Include="Microsoft.UI.Xaml" Version="2.8.6" />
