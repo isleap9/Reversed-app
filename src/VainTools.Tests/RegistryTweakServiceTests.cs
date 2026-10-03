@@ -373,4 +373,105 @@ public sealed class RegistryTweakServiceTests : IDisposable
             Assert.Contains("reduces", tweak!.Description, StringComparison.OrdinalIgnoreCase);
         }
     }
+
+    [Fact]
+    public void Catalog_PerformanceTweaks_HaveCorrectIds()
+    {
+        var expectedIds = new[]
+        {
+            "perf-skiptick",
+            "perf-platform-tick",
+            "perf-timer-expiration",
+            "perf-mpo",
+            "perf-gpu-scheduling",
+            "perf-working-set",
+            "perf-game-mode",
+            "perf-game-dvr",
+        };
+
+        var actualIds = TweakCatalog.Performance.Select(t => t.Id).ToList();
+
+        Assert.Equal(expectedIds.Length, actualIds.Count);
+        foreach (var id in expectedIds)
+        {
+            Assert.Contains(id, actualIds);
+        }
+    }
+
+    [Fact]
+    public void Catalog_PerformanceTweaks_HkcuOnesDoNotRequireAdmin()
+    {
+        var hkcuIds = new[] { "perf-game-mode", "perf-game-dvr" };
+
+        foreach (var id in hkcuIds)
+        {
+            var tweak = TweakCatalog.Find(id);
+            Assert.NotNull(tweak);
+            Assert.Equal(RegistryHive.CurrentUser, tweak!.Hive);
+            Assert.False(tweak.RequiresAdmin, $"{id} is HKCU and should not require admin");
+        }
+    }
+
+    [Fact]
+    public void Catalog_PerformanceTweaks_MpoRequiresExplorerRestart()
+    {
+        var tweak = TweakCatalog.Find("perf-mpo");
+        Assert.NotNull(tweak);
+        Assert.True(tweak!.RequiresExplorerRestart);
+    }
+
+    [Fact]
+    public void Catalog_GpuScheduling_EnabledValueIsTwo()
+    {
+        var tweak = TweakCatalog.Find("perf-gpu-scheduling");
+        Assert.NotNull(tweak);
+        Assert.Equal(2, tweak!.EnabledValue);
+    }
+
+    [Fact]
+    public void Catalog_GpuScheduling_DisabledValueIsOne()
+    {
+        var tweak = TweakCatalog.Find("perf-gpu-scheduling");
+        Assert.NotNull(tweak);
+        Assert.Equal(1, tweak!.DisabledValue);
+    }
+
+    [Fact]
+    public void Catalog_GameMode_DoesNotRequireAdmin()
+    {
+        var tweak = TweakCatalog.Find("perf-game-mode");
+        Assert.NotNull(tweak);
+        Assert.False(tweak!.RequiresAdmin);
+    }
+
+    [Fact]
+    public void Catalog_GameDvr_DoesNotRequireAdmin()
+    {
+        var tweak = TweakCatalog.Find("perf-game-dvr");
+        Assert.NotNull(tweak);
+        Assert.False(tweak!.RequiresAdmin);
+    }
+
+    [Fact]
+    public void Catalog_PerformanceTweaks_AllHaveCorrectHives()
+    {
+        var expectedHives = new Dictionary<string, RegistryHive>
+        {
+            ["perf-skiptick"] = RegistryHive.LocalMachine,
+            ["perf-platform-tick"] = RegistryHive.LocalMachine,
+            ["perf-timer-expiration"] = RegistryHive.LocalMachine,
+            ["perf-mpo"] = RegistryHive.LocalMachine,
+            ["perf-gpu-scheduling"] = RegistryHive.LocalMachine,
+            ["perf-working-set"] = RegistryHive.LocalMachine,
+            ["perf-game-mode"] = RegistryHive.CurrentUser,
+            ["perf-game-dvr"] = RegistryHive.CurrentUser,
+        };
+
+        foreach (var (id, expectedHive) in expectedHives)
+        {
+            var tweak = TweakCatalog.Find(id);
+            Assert.NotNull(tweak);
+            Assert.Equal(expectedHive, tweak!.Hive);
+        }
+    }
 }
