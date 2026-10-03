@@ -3,10 +3,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:controls="clr-namespace:VainTools.GpuGovernor.Controls"
              mc:Ignorable="d">
 
     <Grid Padding="20">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -53,7 +55,7 @@
         </Border>
 
         <!-- Metrics Grid -->
-        <Grid Grid.Row="2">
+        <Grid Grid.Row="2" Margin="0,0,0,16">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="*"/>
@@ -156,6 +158,170 @@
                                  Maximum="100" Margin="0,8,0,0" Height="4"
                                  Foreground="{ThemeResource AccentFillColorDefaultBrush}"/>
                 </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- GPU Controls Section -->
+        <Grid Grid.Row="3">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Control Panel -->
+            <Border Grid.Row="0" Margin="0,0,0,16" Padding="16" CornerRadius="8"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1"
+                    IsEnabled="{x:Bind ViewModel.IsApplying, Mode=OneWay, Converter={StaticResource InverseBooleanConverter}}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="2"
+                               Text="GPU Controls" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+                    <!-- Fan Speed Control -->
+                    <Grid Grid.Row="1" Grid.Column="0" Margin="0,0,8,12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Fan Speed" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Slider Grid.Column="0" Minimum="0" Maximum="100" StepFrequency="1"
+                                    Value="{x:Bind ViewModel.TargetFanSpeed, Mode=TwoWay}"
+                                    VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.TargetFanSpeed, Mode=OneWay}"
+                                       Width="40" TextAlignment="Center" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Button Grid.Column="2" Content="Apply"
+                                    Command="{x:Bind ViewModel.SetFanSpeedCommand}"
+                                    Style="{ThemeResource AccentButtonStyle}"/>
+                        </Grid>
+                    </Grid>
+
+                    <!-- Power Limit Control -->
+                    <Grid Grid.Row="1" Grid.Column="1" Margin="8,0,0,12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Power Limit (%)" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Slider Grid.Column="0" Minimum="50" Maximum="150" StepFrequency="1"
+                                    Value="{x:Bind ViewModel.TargetPowerLimit, Mode=TwoWay}"
+                                    VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.TargetPowerLimit, Mode=OneWay}"
+                                       Width="40" TextAlignment="Center" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Button Grid.Column="2" Content="Apply"
+                                    Command="{x:Bind ViewModel.SetPowerLimitCommand}"
+                                    Style="{ThemeResource AccentButtonStyle}"/>
+                        </Grid>
+                    </Grid>
+
+                    <!-- Core Clock Offset Control -->
+                    <Grid Grid.Row="2" Grid.Column="0" Margin="0,0,8,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Core Clock Offset (MHz)" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Slider Grid.Column="0" Minimum="-500" Maximum="500" StepFrequency="10"
+                                    Value="{x:Bind ViewModel.CoreClockOffset, Mode=TwoWay}"
+                                    VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.CoreClockOffset, Mode=OneWay}"
+                                       Width="50" TextAlignment="Center" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Button Grid.Column="2" Content="Apply"
+                                    Command="{x:Bind ViewModel.SetCoreOffsetCommand}"
+                                    Style="{ThemeResource AccentButtonStyle}"/>
+                        </Grid>
+                    </Grid>
+
+                    <!-- Memory Clock Offset Control -->
+                    <Grid Grid.Row="2" Grid.Column="1" Margin="8,0,0,0">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock Grid.Row="0" Text="Memory Clock Offset (MHz)" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <Grid Grid.Row="1">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <Slider Grid.Column="0" Minimum="-500" Maximum="500" StepFrequency="10"
+                                    Value="{x:Bind ViewModel.MemoryClockOffset, Mode=TwoWay}"
+                                    VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.MemoryClockOffset, Mode=OneWay}"
+                                       Width="50" TextAlignment="Center" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <Button Grid.Column="2" Content="Apply"
+                                    Command="{x:Bind ViewModel.SetMemoryOffsetCommand}"
+                                    Style="{ThemeResource AccentButtonStyle}"/>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- Fan Curve Editor Section -->
+            <Border Grid.Row="1" Padding="16" CornerRadius="8"
+                    Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}" BorderThickness="1">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0" Margin="0,0,0,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Fan Curve" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                            <Button Content="Load from GPU"
+                                    Command="{x:Bind ViewModel.LoadFanCurveCommand}"
+                                    IsEnabled="{x:Bind ViewModel.IsApplying, Mode=OneWay, Converter={StaticResource InverseBooleanConverter}}"/>
+                            <Button Content="Apply to GPU"
+                                    Command="{x:Bind ViewModel.ApplyFanCurveCommand}"
+                                    Style="{ThemeResource AccentButtonStyle}"
+                                    IsEnabled="{x:Bind ViewModel.IsApplying, Mode=OneWay, Converter={StaticResource InverseBooleanConverter}}"/>
+                            <Button Content="Reset All"
+                                    Command="{x:Bind ViewModel.ResetCommand}"
+                                    IsEnabled="{x:Bind ViewModel.IsApplying, Mode=OneWay, Converter={StaticResource InverseBooleanConverter}}"/>
+                        </StackPanel>
+                    </Grid>
+
+                    <TextBlock Grid.Row="1" Text="Define fan speed at specific temperatures. Points are sorted by temperature."
+                               FontSize="12" Opacity="0.6" Margin="0,0,0,8"/>
+
+                    <controls:FanCurveEditor Grid.Row="2"
+                                             FanCurvePoints="{x:Bind ViewModel.FanCurvePoints, Mode=TwoWay}"/>
+                </Grid>
             </Border>
         </Grid>
     </Grid>

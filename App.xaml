@@ -6,6 +6,7 @@
     <Application.Resources>
         <ResourceDictionary>
             <converters:TemperatureToColorConverter x:Key="TemperatureToColorConverter"/>
+            <converters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
