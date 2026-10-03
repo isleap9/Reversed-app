@@ -120,6 +120,7 @@ public partial class App : Application
         builder.Services.AddTransient<DateTimeViewModel>();
         builder.Services.AddTransient<SettingsVisibilityViewModel>();
         builder.Services.AddTransient<PowerEditorViewModel>();
+        builder.Services.AddTransient<NetworkPageViewModel>();
 
         // Navigation: pages are created through the DI container.
         builder.Services.AddSingleton<INavigationService>(sp =>

@@ -2,38 +2,122 @@
     x:Class="VainTools.App.Features.Network.NetworkPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:local="using:VainTools.App.Features.Network"
-    mc:Ignorable="d">
+    xmlns:vm="using:VainTools.App.ViewModels">
 
-    <Grid Padding="24">
+    <Grid Padding="24" RowSpacing="16">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0"
-                   Text="Network"
-                   Style="{StaticResource TitleTextBlockStyle}"/>
+        <!-- Header -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Network" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Text="Network adapters, DNS, NTP and offload settings."
+                           Margin="0,4,0,0"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+            <Button Grid.Column="1" Content="Refresh"
+                    Command="{Binding RefreshAdaptersCommand}"
+                    VerticalAlignment="Top" />
+        </Grid>
 
-        <TextBlock Grid.Row="1"
-                   Margin="0,8,0,0"
-                   TextWrapping="Wrap"
-                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                   Text="Network adapters, DNS, NTP and offload settings."/>
-
-        <Border Grid.Row="2"
-                Margin="0,16,0,0"
-                Padding="16"
-                CornerRadius="8"
-                VerticalAlignment="Top"
+        <!-- Adapter List -->
+        <Border Grid.Row="1" Padding="16" CornerRadius="8"
                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                 BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                 BorderThickness="1">
-            <TextBlock Text="Not implemented yet."
-                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
+            <StackPanel>
+                <TextBlock Text="Network Adapters" FontWeight="SemiBold" />
+                <ItemsControl ItemsSource="{Binding Adapters}" Margin="0,8,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Padding="8" ColumnSpacing="16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding InterfaceDescription}"
+                                               FontSize="12" Opacity="0.7"
+                                               TextWrapping="Wrap" />
+                                    <TextBlock Text="{Binding MacAddress}"
+                                               FontSize="11"
+                                               Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                </StackPanel>
+                                <TextBlock Grid.Column="1" Text="{Binding Status}"
+                                           VerticalAlignment="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
         </Border>
+
+        <!-- DNS/NTP Card -->
+        <Border Grid.Row="2" Padding="16" CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="1">
+            <StackPanel>
+                <TextBlock Text="DNS &amp; NTP Settings" FontWeight="SemiBold" />
+                <Grid Margin="0,8,0,0" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="DNS Server" FontSize="12" Opacity="0.7" />
+                        <TextBox Text="{Binding DnsServer, Mode=TwoWay}"
+                                 PlaceholderText="Primary DNS (e.g., 1.1.1.1)" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="NTP Server" FontSize="12" Opacity="0.7" />
+                        <TextBox Text="{Binding NtpServer, Mode=TwoWay}"
+                                 PlaceholderText="NTP server (e.g., time.windows.com)" />
+                    </StackPanel>
+                </Grid>
+                <Button Content="Apply Settings" Margin="0,8,0,0"
+                        Command="{Binding SaveDnsNtpCommand}" />
+            </StackPanel>
+        </Border>
+
+        <!-- Offload Tweaks -->
+        <ScrollViewer Grid.Row="3">
+            <ItemsControl ItemsSource="{Binding OffloadTweaks}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Margin="0,0,0,8" Padding="16" CornerRadius="8"
+                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                                BorderThickness="1">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                    <TextBlock Text="{Binding Description}"
+                                               FontSize="12" Opacity="0.7"
+                                               TextWrapping="Wrap" Margin="0,2,0,0" />
+                                </StackPanel>
+                                <ToggleSwitch Grid.Column="1" MinWidth="0"
+                                              OnContent="" OffContent=""
+                                              IsOn="{Binding IsOn, Mode=TwoWay}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
     </Grid>
 </Page>
