@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -330,17 +331,25 @@ public class GpuService : IGpuService
     {
         return Task.Run(() =>
         {
-            if (!EnsureInitialized() || deviceHandle == IntPtr.Zero) return;
+            if (!EnsureInitialized() || deviceHandle == IntPtr.Zero)
+            {
+                Debug.WriteLine("[GpuService] SetPowerLimitAsync: NVML not initialized or invalid handle");
+                return;
+            }
 
             try
             {
                 // Convert watts to milliwatts for NVML
                 uint limitMw = (uint)(powerLimitWatts * 1000);
-                NvmlDeviceSetPowerManagementLimit(deviceHandle, limitMw);
+                int result = NvmlDeviceSetPowerManagementLimit(deviceHandle, limitMw);
+                if (result == NVML_SUCCESS)
+                    Debug.WriteLine($"[GpuService] SetPowerLimitAsync: Set power limit to {powerLimitWatts}W");
+                else
+                    Debug.WriteLine($"[GpuService] SetPowerLimitAsync: Failed with NVML error code {result}");
             }
-            catch
+            catch (Exception ex)
             {
-                // Silently fail if power limit cannot be set
+                Debug.WriteLine($"[GpuService] SetPowerLimitAsync: Exception - {ex.Message}");
             }
         });
     }
@@ -349,17 +358,27 @@ public class GpuService : IGpuService
     {
         return Task.Run(() =>
         {
-            if (!EnsureInitialized() || deviceHandle == IntPtr.Zero) return (0, 0);
+            if (!EnsureInitialized() || deviceHandle == IntPtr.Zero)
+            {
+                Debug.WriteLine("[GpuService] GetClockOffsetsAsync: NVML not initialized or invalid handle");
+                return (0, 0);
+            }
 
             try
             {
                 int result = NvmlDeviceGetClockOffsets(deviceHandle, out int coreOffset, out int memoryOffset);
-                return result == NVML_SUCCESS ? (coreOffset, memoryOffset) : (0, 0);
+                if (result == NVML_SUCCESS)
+                {
+                    Debug.WriteLine($"[GpuService] GetClockOffsetsAsync: Core offset {coreOffset}MHz, memory offset {memoryOffset}MHz");
+                    return (coreOffset, memoryOffset);
+                }
+                Debug.WriteLine($"[GpuService] GetClockOffsetsAsync: Failed with NVML error code {result}");
             }
-            catch
+            catch (Exception ex)
             {
-                return (0, 0);
+                Debug.WriteLine($"[GpuService] GetClockOffsetsAsync: Exception - {ex.Message}");
             }
+            return (0, 0);
         });
     }
 
@@ -367,15 +386,23 @@ public class GpuService : IGpuService
     {
         return Task.Run(() =>
         {
-            if (!EnsureInitialized() || deviceHandle == IntPtr.Zero) return;
+            if (!EnsureInitialized() || deviceHandle == IntPtr.Zero)
+            {
+                Debug.WriteLine("[GpuService] SetClockOffsetsAsync: NVML not initialized or invalid handle");
+                return;
+            }
 
             try
             {
-                NvmlDeviceSetClockOffsets(deviceHandle, coreOffset, memoryOffset);
+                int result = NvmlDeviceSetClockOffsets(deviceHandle, coreOffset, memoryOffset);
+                if (result == NVML_SUCCESS)
+                    Debug.WriteLine($"[GpuService] SetClockOffsetsAsync: Set core offset {coreOffset}MHz, memory offset {memoryOffset}MHz");
+                else
+                    Debug.WriteLine($"[GpuService] SetClockOffsetsAsync: Failed with NVML error code {result}");
             }
-            catch
+            catch (Exception ex)
             {
-                // Silently fail if clock offsets cannot be set
+                Debug.WriteLine($"[GpuService] SetClockOffsetsAsync: Exception - {ex.Message}");
             }
         });
     }
@@ -384,15 +411,23 @@ public class GpuService : IGpuService
     {
         return Task.Run(() =>
         {
-            if (!EnsureInitialized() || deviceHandle == IntPtr.Zero) return;
+            if (!EnsureInitialized() || deviceHandle == IntPtr.Zero)
+            {
+                Debug.WriteLine("[GpuService] SetFanSpeedAsync: NVML not initialized or invalid handle");
+                return;
+            }
 
             try
             {
-                NvmlDeviceSetFanSpeed_v2(deviceHandle, (uint)speedPercent);
+                int result = NvmlDeviceSetFanSpeed_v2(deviceHandle, (uint)speedPercent);
+                if (result == NVML_SUCCESS)
+                    Debug.WriteLine($"[GpuService] SetFanSpeedAsync: Set fan speed to {speedPercent}%");
+                else
+                    Debug.WriteLine($"[GpuService] SetFanSpeedAsync: Failed with NVML error code {result}");
             }
-            catch
+            catch (Exception ex)
             {
-                // Silently fail if fan speed cannot be set
+                Debug.WriteLine($"[GpuService] SetFanSpeedAsync: Exception - {ex.Message}");
             }
         });
     }
@@ -401,7 +436,11 @@ public class GpuService : IGpuService
     {
         return Task.Run(() =>
         {
-            if (!EnsureInitialized() || deviceHandle == IntPtr.Zero) return new List<NvFanCurvePoint>();
+            if (!EnsureInitialized() || deviceHandle == IntPtr.Zero)
+            {
+                Debug.WriteLine("[GpuService] GetFanCurveAsync: NVML not initialized or invalid handle");
+                return new List<NvFanCurvePoint>();
+            }
 
             try
             {
@@ -419,12 +458,14 @@ public class GpuService : IGpuService
                             SpeedPercent = points[i].SpeedPercent
                         });
                     }
+                    Debug.WriteLine($"[GpuService] GetFanCurveAsync: Read {count} fan curve points");
                     return curve;
                 }
+                Debug.WriteLine($"[GpuService] GetFanCurveAsync: Failed with NVML error code {result}");
             }
-            catch
+            catch (Exception ex)
             {
-                // Silently fail
+                Debug.WriteLine($"[GpuService] GetFanCurveAsync: Exception - {ex.Message}");
             }
 
             return new List<NvFanCurvePoint>();
@@ -435,7 +476,11 @@ public class GpuService : IGpuService
     {
         return Task.Run(() =>
         {
-            if (!EnsureInitialized() || deviceHandle == IntPtr.Zero || points == null || points.Count == 0) return;
+            if (!EnsureInitialized() || deviceHandle == IntPtr.Zero || points == null || points.Count == 0)
+            {
+                Debug.WriteLine("[GpuService] SetFanCurveAsync: NVML not initialized, invalid handle, or no points");
+                return;
+            }
 
             try
             {
@@ -448,11 +493,15 @@ public class GpuService : IGpuService
                         SpeedPercent = points[i].SpeedPercent
                     };
                 }
-                NvmlDeviceSetFanCurve(deviceHandle, nativePoints, nativePoints.Length);
+                int result = NvmlDeviceSetFanCurve(deviceHandle, nativePoints, nativePoints.Length);
+                if (result == NVML_SUCCESS)
+                    Debug.WriteLine($"[GpuService] SetFanCurveAsync: Applied {points.Count} fan curve points");
+                else
+                    Debug.WriteLine($"[GpuService] SetFanCurveAsync: Failed with NVML error code {result}");
             }
-            catch
+            catch (Exception ex)
             {
-                // Silently fail if fan curve cannot be set
+                Debug.WriteLine($"[GpuService] SetFanCurveAsync: Exception - {ex.Message}");
             }
         });
     }
