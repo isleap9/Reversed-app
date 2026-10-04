@@ -2,14 +2,14 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 status: executing
-stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-10-03T15:58:59.019Z"
+stopped_at: Phase 5 verified — gaps found
+last_updated: "2026-10-04T00:45:00.000Z"
 state_head: 254e5330b27107f5e03d5cbbb8cd4064a408ab6a
 progress:
   total_phases: 10
   completed_phases: 4
   total_plans: 8
-  completed_plans: 3
+  completed_plans: 6
 name: Real Vain Toolbox Rebuild
 current_phase_name: Network, Sound, Affinity & Startup
 current_phase: 5
@@ -26,19 +26,63 @@ See: .planning/PROJECT.md (updated 2026-10-03)
 
 ## Current Position
 
-Phase 3 of 10 — General & System
-Plan 3 of 3 — complete
-Status: Executing Phase 5
+Phase 5 of 10 — Network, Sound, Affinity & Startup
+Plan 3 of 3 — complete, but phase verification found gaps
+Status: 3 requirements unmet (SND-02 volume mixer, AFF-03 affinity rule persistence,
+STR-03 delete startup entry); 2 unverified (NET-02/NET-03 DNS/NTP writes)
 
 ```
-[======                                            ] 30%
+[===============                                   ] 45%
 ```
 
 ## Session Tracking
 
 ### Last Updated
 
-- **Phase 3 complete:** registry tweak engine + 7 General/System pages, verified
+- **Phase 5 verified — gaps found.** All four pages work and the wave-3 defects are
+  fixed, but three requirements are not implemented. See
+  `.planning/phases/05-network-sound-affinity-startup/VERIFICATION.md`.
+
+### Phase 5 Outcome
+
+- `Services/AffinityService.cs` — P/Invoke affinity read/write, process enumeration,
+  system mask; skips PID 0/4 and protected processes
+- `Services/StartupService.cs` — Run/RunOnce across HKCU/HKLM/WOW6432Node, plus
+  boot/logon scheduled tasks via `schtasks.exe`
+- `Services/SoundService.cs` — WASAPI device enumeration and volume/mute control
+- `Services/NetworkService.cs` — adapter enumeration and DNS/NTP settings
+- Pages: Network, Sound, Affinity, Startup (all custom layouts per the UI-SPEC)
+- **225 tests pass** (was 172); 0 warnings / 0 errors
+- Runtime-verified: all 28 pages navigate; Affinity read 168 processes and 16 CPUs on
+  this machine; Startup read 5 Run keys + 64 boot/logon tasks; Sound read 4 real
+  devices with correct friendly names
+
+### Phase 5 notes — wave 3 was committed without compiling
+
+Wave 3 (Affinity + Startup) was committed in a state that produced **40 build errors**.
+Fixing it exposed four runtime defects that only appear when the pages are actually
+exercised. Two of them had modified this machine; both were repaired. See
+`05-03-SUMMARY.md` for the full account.
+
+The important lesson for future phases:
+
+- **`ToggleSwitch.Toggled` fires when the binding pushes a value into the control**, not
+  only on user interaction. A handler that writes to the system on every `Toggled` will
+  recurse (`Refresh → rebind → Toggled → write → Refresh`). Guard the handler by comparing
+  the new value against the last state read from the system. This disabled 39 real
+  scheduled tasks before it was caught.
+- **`{Binding IsOn, Mode=TwoWay}` pushes the control's initial state into the view model**
+  after the page renders. `x:Bind` (as `Controls/TweakList.xaml` uses) initialises from
+  the view model instead and does not have this problem. Prefer `x:Bind`; where the rows
+  are created by a view model and `x:Bind` is impossible, handle `Toggled` explicitly.
+- **A `Auto`-sized grid row gives its child unbounded height.** A list in such a row is
+  measured at full content height and clips everything below it, with no scrollbar. Put
+  scrollable content in a `*` row.
+
+### Phase 4 Outcome
+
+- Security, Performance and Power pages with a power-plan editor
+- `04-VERIFICATION.md` records the phase verification
 
 ### Phase 3 Outcome
 
@@ -203,11 +247,11 @@ overwriting files only partially read — delete and rewrite, or use `patch`.
 
 ## Session Continuity
 
-**Last session:** 2026-10-03T15:27:52.208Z
-**Stopped at:** Phase 5 UI-SPEC approved
-**Resume file:** .planning/phases/05-network-sound-affinity-startup/05-UI-SPEC.md
+**Last session:** 2026-10-04T00:45:00.000Z
+**Stopped at:** Phase 5 verified — gaps found, 3 requirements unmet
+**Resume file:** .planning/phases/05-network-sound-affinity-startup/VERIFICATION.md
 
-Resume with: `/gsd-plan-phase 4`
+Resume with: close the gaps in Phase 5 (SND-02, AFF-03, STR-03) before planning Phase 6
 
 ---
 *This state file tracks progress between development sessions.*
