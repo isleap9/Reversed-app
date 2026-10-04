@@ -177,4 +177,100 @@ public sealed class AffinityViewModelTests
         Assert.Contains("Access denied", _viewModel.ErrorMessage);
         Assert.Contains("Could not set affinity", _viewModel.StatusMessage);
     }
+
+    [Fact]
+    public void SaveRuleCommand_WritesCurrentCheckboxMask()
+    {
+        _viewModel.SelectProcessCommand.Execute(new ProcessInfo(7, "test.exe", 4));
+        _viewModel.Cpus[1].IsEnabled = false;
+        _viewModel.Cpus[3].IsEnabled = false;
+
+        _viewModel.SaveRuleCommand.Execute(null);
+
+        _affinityServiceMock.Verify(x => x.SaveRule("test.exe", 0b0101UL), Times.Once);
+        Assert.Contains("Rule saved for test.exe", _viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public void SaveRuleCommand_WithNoCpuSelected_SetsError()
+    {
+        _viewModel.SelectProcessCommand.Execute(new ProcessInfo(7, "test.exe", 4));
+        foreach (var cpu in _viewModel.Cpus)
+        {
+            cpu.IsEnabled = false;
+        }
+
+        _viewModel.SaveRuleCommand.Execute(null);
+
+        _affinityServiceMock.Verify(
+            x => x.SaveRule(It.IsAny<string>(), It.IsAny<ulong>()),
+            Times.Never);
+        Assert.Contains("no CPU selected", _viewModel.StatusMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ApplyRulesCommand_ReportsReappliedCount()
+    {
+        _affinityServiceMock.Setup(x => x.ApplyRules()).Returns(2);
+
+        _viewModel.ApplyRulesCommand.Execute(null);
+
+        Assert.Contains("2 rules", _viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public void ApplyRulesCommand_WithNoMatches_ReportsSo()
+    {
+        _affinityServiceMock.Setup(x => x.ApplyRules()).Returns(0);
+
+        _viewModel.ApplyRulesCommand.Execute(null);
+
+        Assert.Contains("No saved rules matched", _viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public async Task DeleteRuleCommand_WhenConfirmed_DeletesAndReloads()
+    {
+        _dialogServiceMock
+            .Setup(x => x.ConfirmAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+        _affinityServiceMock
+            .Setup(x => x.GetRules())
+            .Returns([]);
+        var rule = new AffinityRule("test.exe", 0b0101UL);
+
+        await _viewModel.DeleteRuleCommand.ExecuteAsync(rule);
+
+        _affinityServiceMock.Verify(x => x.DeleteRule("test.exe"), Times.Once);
+        Assert.Contains("Deleted rule for test.exe", _viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public async Task DeleteRuleCommand_WhenCancelled_DoesNotDelete()
+    {
+        _dialogServiceMock
+            .Setup(x => x.ConfirmAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+        var rule = new AffinityRule("test.exe", 0b0101UL);
+
+        await _viewModel.DeleteRuleCommand.ExecuteAsync(rule);
+
+        _affinityServiceMock.Verify(x => x.DeleteRule(It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public void RefreshCommand_ReloadsSavedRules()
+    {
+        _affinityServiceMock
+            .Setup(x => x.GetProcesses())
+            .Returns([new ProcessInfo(1, "test.exe", 4)]);
+        _affinityServiceMock
+            .Setup(x => x.GetRules())
+            .Returns([new AffinityRule("sticky.exe", 0b0011UL)]);
+
+        _viewModel.RefreshCommand.Execute(null);
+
+        Assert.Single(_viewModel.Rules);
+        Assert.Equal("sticky.exe", _viewModel.Rules[0].ProcessName);
+    }
 }

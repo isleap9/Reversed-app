@@ -94,27 +94,27 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Network
 
-- [ ] **NET-01**: Network page lists adapters
-- [ ] **NET-02**: User can set DNS servers
-- [ ] **NET-03**: User can manage NTP servers
-- [ ] **NET-04**: Adapter offload settings can be viewed and toggled
+- [x] **NET-01**: Network page lists adapters
+- [x] **NET-02**: User can set DNS servers
+- [x] **NET-03**: User can manage NTP servers
+- [x] **NET-04**: Adapter offload settings can be viewed and toggled
 
 ### Sound
 
-- [ ] **SND-01**: Sound page shows audio devices
-- [ ] **SND-02**: Volume mixer is accessible
-- [ ] **SND-03**: Spatial audio can be toggled
-- [ ] **SND-04**: Audio enhancements can be toggled
+- [x] **SND-01**: Sound page shows audio devices
+- [x] **SND-02**: Volume mixer is accessible
+- [x] **SND-03**: Spatial audio can be toggled
+- [x] **SND-04**: Audio enhancements can be toggled
 
 ### Affinity & Startup
 
-- [ ] **AFF-01**: User can view running processes
-- [ ] **AFF-02**: User can set CPU affinity for a process
-- [ ] **AFF-03**: Affinity rules can be saved and reapplied
-- [ ] **STR-01**: Startup page lists startup entries grouped by source
-- [ ] **STR-02**: User can enable/disable a startup entry
-- [ ] **STR-03**: User can delete a startup entry
-- [ ] **STR-04**: Scheduled tasks are listed alongside Run-key entries
+- [x] **AFF-01**: User can view running processes
+- [x] **AFF-02**: User can set CPU affinity for a process
+- [x] **AFF-03**: Affinity rules can be saved and reapplied
+- [x] **STR-01**: Startup page lists startup entries grouped by source
+- [x] **STR-02**: User can enable/disable a startup entry
+- [x] **STR-03**: User can delete a startup entry
+- [x] **STR-04**: Scheduled tasks are listed alongside Run-key entries
 
 ### Apps
 
@@ -191,8 +191,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SYS-01 … SYS-04 | Phase 3 | Complete |
 | SEC-01 … SEC-05 | Phase 4 | Pending |
 | PERF-01 … PERF-04, PWR-01 … PWR-03 | Phase 4 | Pending |
-| NET-01 … NET-04, SND-01 … SND-04 | Phase 5 | Pending |
-| AFF-01 … AFF-03, STR-01 … STR-04 | Phase 5 | Pending |
+| NET-01 … NET-04, SND-01 … SND-04 | Phase 5 | Complete |
+| AFF-01 … AFF-03, STR-01 … STR-04 | Phase 5 | Complete |
 | APPX-01 … APPX-02, INST-01 … INST-03 | Phase 6 | Pending |
 | OPT-01 … OPT-02, STOR-01 … STOR-02 | Phase 6 | Pending |
 | TOOL-01 … TOOL-04, DRV-01 … DRV-05 | Phase 7 | Pending |

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Win32;
 using VainTools.App.Services;
 using Xunit;
 
@@ -95,5 +96,131 @@ public sealed class AffinityServiceTests
     public void SetAffinityMask_ForUnknownProcess_Throws()
     {
         Assert.ThrowsAny<Exception>(() => _service.SetAffinityMask(-1, 1UL));
+    }
+
+    [Fact]
+    public void Rules_SaveGetDelete_RoundTrips()
+    {
+        var (service, root) = CreateIsolatedService();
+        try
+        {
+            Assert.Empty(service.GetRules());
+
+            service.SaveRule("vain-test.exe", 0b0101UL);
+
+            var saved = Assert.Single(service.GetRules());
+            Assert.Equal("vain-test.exe", saved.ProcessName);
+            Assert.Equal(0b0101UL, saved.Mask);
+
+            service.SaveRule("vain-test.exe", 0b0011UL);
+            Assert.Equal(0b0011UL, Assert.Single(service.GetRules()).Mask);
+
+            service.DeleteRule("vain-test.exe");
+            Assert.Empty(service.GetRules());
+        }
+        finally
+        {
+            Cleanup(root);
+        }
+    }
+
+    [Fact]
+    public void SaveRule_WithEmptyName_Throws()
+    {
+        var (service, root) = CreateIsolatedService();
+        try
+        {
+            Assert.Throws<ArgumentException>(() => service.SaveRule("  ", 1UL));
+        }
+        finally
+        {
+            Cleanup(root);
+        }
+    }
+
+    [Fact]
+    public void SaveRule_WithZeroMask_Throws()
+    {
+        var (service, root) = CreateIsolatedService();
+        try
+        {
+            Assert.Throws<ArgumentException>(() => service.SaveRule("vain-test.exe", 0UL));
+        }
+        finally
+        {
+            Cleanup(root);
+        }
+    }
+
+    [Fact]
+    public void DeleteRule_WhenMissing_Throws()
+    {
+        var (service, root) = CreateIsolatedService();
+        try
+        {
+            Assert.Throws<InvalidOperationException>(() => service.DeleteRule("vain-test-missing.exe"));
+        }
+        finally
+        {
+            Cleanup(root);
+        }
+    }
+
+    [Fact]
+    public void ApplyRules_WithNoMatchingProcess_ReturnsZero()
+    {
+        var (service, root) = CreateIsolatedService();
+        try
+        {
+            service.SaveRule("vain-process-that-does-not-exist.exe", 1UL);
+
+            Assert.Equal(0, service.ApplyRules());
+        }
+        finally
+        {
+            Cleanup(root);
+        }
+    }
+
+    [Fact]
+    public void ApplyRules_WithOwnProcessRule_ReappliesCurrentMask()
+    {
+        var (service, root) = CreateIsolatedService();
+        try
+        {
+            var ownName = Environment.ProcessPath is string path
+                ? Path.GetFileName(path)
+                : "dotnet";
+            var ownMask = service.GetAffinityMask(Environment.ProcessId);
+            service.SaveRule(ownName, ownMask);
+
+            Assert.True(service.ApplyRules() >= 1);
+        }
+        finally
+        {
+            Cleanup(root);
+        }
+    }
+
+    private static (AffinityService Service, string RootPath) CreateIsolatedService()
+    {
+        var root = $@"SOFTWARE\VainTools\Test\{Guid.NewGuid():N}";
+        var service = new AffinityService(
+            NullLogger<AffinityService>.Instance,
+            root + @"\AffinityRules");
+
+        return (service, root);
+    }
+
+    private static void Cleanup(string rootPath)
+    {
+        try
+        {
+            Registry.CurrentUser.DeleteSubKeyTree(rootPath, throwOnMissingSubKey: false);
+        }
+        catch
+        {
+            // Best-effort test cleanup; a leftover throwaway key is harmless.
+        }
     }
 }

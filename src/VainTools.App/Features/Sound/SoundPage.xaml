@@ -8,6 +8,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -60,8 +61,42 @@
             </StackPanel>
         </Border>
 
+        <!-- Volume Mixer -->
+        <Border Grid.Row="2" Padding="16" CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="1">
+            <StackPanel>
+                <TextBlock Text="Volume Mixer" FontWeight="SemiBold" />
+                <ComboBox ItemsSource="{Binding Devices}"
+                          DisplayMemberPath="Name"
+                          PlaceholderText="Select a device"
+                          Margin="0,8,0,0"
+                          HorizontalAlignment="Stretch"
+                          SelectionChanged="OnDeviceSelectionChanged" />
+                <Grid Margin="0,8,0,0" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Slider Grid.Column="0" Minimum="0" Maximum="100"
+                            Value="{Binding VolumeLevel, Mode=TwoWay}"
+                            ValueChanged="OnVolumeChanged"
+                            VerticalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Text="{Binding VolumeText}"
+                               VerticalAlignment="Center" />
+                    <ToggleSwitch Grid.Column="2" MinWidth="0"
+                                  OnContent="Muted" OffContent=""
+                                  IsOn="{Binding IsMuted, Mode=TwoWay}"
+                                  Toggled="OnMuteToggled"
+                                  VerticalAlignment="Center" />
+                </Grid>
+            </StackPanel>
+        </Border>
+
         <!-- Audio Enhancements -->
-        <ScrollViewer Grid.Row="2">
+        <ScrollViewer Grid.Row="3">
             <ItemsControl ItemsSource="{Binding EnhancementTweaks}">
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>

@@ -16,6 +16,11 @@ public interface IStartupService
     void ToggleRunKeyEntry(StartupEntry entry, bool isEnabled);
 
     /// <summary>
+    /// Deletes a Run key entry (plain or '-'-prefixed disabled marker).
+    /// </summary>
+    void DeleteRunKeyEntry(StartupEntry entry);
+
+    /// <summary>
     /// Queries scheduled tasks that run at boot or at logon.
     /// </summary>
     Task<IReadOnlyList<StartupEntry>> GetScheduledTasksAsync(CancellationToken cancellationToken = default);
@@ -24,6 +29,11 @@ public interface IStartupService
     /// Enables or disables a scheduled task.
     /// </summary>
     Task ToggleScheduledTaskAsync(StartupEntry entry, bool isEnabled, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Deletes a scheduled task. Irreversible: the caller must confirm first.
+    /// </summary>
+    Task DeleteScheduledTaskAsync(StartupEntry entry, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

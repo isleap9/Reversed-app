@@ -188,4 +188,80 @@ public sealed class StartupViewModelTests
         Assert.Contains("Access is denied", _viewModel.ErrorMessage);
         Assert.Contains("Could not toggle task", _viewModel.StatusMessage);
     }
+
+    [Fact]
+    public async Task DeleteRunKeyEntryAsync_WhenConfirmed_DeletesAndReloads()
+    {
+        _dialogServiceMock
+            .Setup(x => x.ConfirmAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+        var entry = new StartupEntry("OneDrive", @"C:\OneDrive.exe", "HKCU", true);
+
+        await _viewModel.DeleteRunKeyEntryCommand.ExecuteAsync(entry);
+
+        _startupServiceMock.Verify(x => x.DeleteRunKeyEntry(entry), Times.Once);
+        Assert.Contains("Deleted OneDrive", _viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public async Task DeleteRunKeyEntryAsync_WhenCancelled_DoesNotDelete()
+    {
+        _dialogServiceMock
+            .Setup(x => x.ConfirmAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+        var entry = new StartupEntry("OneDrive", @"C:\OneDrive.exe", "HKCU", true);
+
+        await _viewModel.DeleteRunKeyEntryCommand.ExecuteAsync(entry);
+
+        _startupServiceMock.Verify(x => x.DeleteRunKeyEntry(It.IsAny<StartupEntry>()), Times.Never);
+        Assert.Contains("Delete cancelled", _viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public async Task DeleteRunKeyEntryAsync_WhenServiceFails_SetsErrorMessage()
+    {
+        _dialogServiceMock
+            .Setup(x => x.ConfirmAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+        _startupServiceMock
+            .Setup(x => x.DeleteRunKeyEntry(It.IsAny<StartupEntry>()))
+            .Throws(new InvalidOperationException("Access is denied"));
+
+        var entry = new StartupEntry("OneDrive", @"C:\OneDrive.exe", "HKCU", true);
+        await _viewModel.DeleteRunKeyEntryCommand.ExecuteAsync(entry);
+
+        Assert.Contains("Access is denied", _viewModel.ErrorMessage);
+        Assert.Contains("Could not delete entry", _viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public async Task DeleteScheduledTaskAsync_WhenConfirmed_DeletesAndReloads()
+    {
+        _dialogServiceMock
+            .Setup(x => x.ConfirmAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+        var entry = new StartupEntry("EdgeUpdate", @"\Microsoft\Edge\", "Scheduled Task", true);
+
+        await _viewModel.DeleteScheduledTaskCommand.ExecuteAsync(entry);
+
+        _startupServiceMock.Verify(
+            x => x.DeleteScheduledTaskAsync(entry, It.IsAny<CancellationToken>()),
+            Times.Once);
+        Assert.Contains("Deleted EdgeUpdate", _viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public async Task DeleteScheduledTaskAsync_WhenCancelled_DoesNotDelete()
+    {
+        _dialogServiceMock
+            .Setup(x => x.ConfirmAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+        var entry = new StartupEntry("EdgeUpdate", @"\Microsoft\Edge\", "Scheduled Task", true);
+
+        await _viewModel.DeleteScheduledTaskCommand.ExecuteAsync(entry);
+
+        _startupServiceMock.Verify(
+            x => x.DeleteScheduledTaskAsync(It.IsAny<StartupEntry>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
 }

@@ -29,8 +29,31 @@ public partial class SoundPageViewModel : ViewModelBase
     /// <summary>Audio devices found on the system.</summary>
     public ObservableCollection<AudioDevice> Devices { get; } = [];
 
+    /// <summary>Currently selected device for the volume mixer.</summary>
+    [ObservableProperty]
+    public partial AudioDevice? SelectedDevice { get; set; }
+
+    /// <summary>Mixer level for the selected device, 0–100.</summary>
+    [ObservableProperty]
+    public partial double VolumeLevel { get; set; } = 100;
+
+    /// <summary>Mute state for the selected device.</summary>
+    [ObservableProperty]
+    public partial bool IsMuted { get; set; }
+
+    /// <summary>Whole-percent display for the mixer readout.</summary>
+    public string VolumeText => $"{VolumeLevel:F0} %";
+
+    partial void OnVolumeLevelChanged(double value) => OnPropertyChanged(nameof(VolumeText));
+
     /// <summary>Audio enhancement toggles backed by TweakCatalog.Sound.</summary>
     public ObservableCollection<TweakToggleViewModel> EnhancementTweaks { get; } = [];
+
+    // Last volume/mute read from the system. Control events also fire on
+    // programmatic binding updates, so only a value that differs from the last
+    // system read is treated as a user action (same pattern as IsUserToggle).
+    private float _lastVolumeLevel = 1.0f;
+    private bool _lastMute;
 
     public SoundPageViewModel(
         ISoundService soundService,
@@ -82,6 +105,8 @@ public partial class SoundPageViewModel : ViewModelBase
         try
         {
             await _soundService.SetVolumeAsync(deviceId, level);
+            _lastVolumeLevel = level;
+            VolumeLevel = level * 100;
             StatusMessage = $"Volume set to {level:P0}";
         }
         catch (Exception ex)
@@ -96,6 +121,8 @@ public partial class SoundPageViewModel : ViewModelBase
         try
         {
             await _soundService.SetMuteAsync(deviceId, mute);
+            _lastMute = mute;
+            IsMuted = mute;
             StatusMessage = mute ? "Device muted" : "Device unmuted";
         }
         catch (Exception ex)
@@ -104,6 +131,46 @@ public partial class SoundPageViewModel : ViewModelBase
             _infoBar.ShowError("Mute change failed", ex.Message);
         }
     }
+
+    [RelayCommand]
+    public async Task SelectDeviceAsync(AudioDevice? device)
+    {
+        SelectedDevice = device;
+
+        if (device is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var info = await _soundService.GetVolumeInfoAsync(device.Id);
+            _lastVolumeLevel = info.Level;
+            _lastMute = info.IsMute;
+            VolumeLevel = info.Level * 100;
+            IsMuted = info.IsMute;
+            StatusMessage = $"{device.Name}: {info.Level:P0}{(info.IsMute ? " (muted)" : string.Empty)}";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to get volume for {Device}", device.Name);
+            StatusMessage = $"Could not get volume: {ex.Message}";
+            _infoBar.ShowError("Volume read failed", ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// True when a slider value differs from the last system-read level, i.e.
+    /// the user really moved it. A programmatic set (device select, refresh)
+    /// produces an equal value and MUST be ignored.
+    /// </summary>
+    public bool IsUserVolumeChange(double newLevel) =>
+        Math.Abs(newLevel / 100 - _lastVolumeLevel) > 0.005;
+
+    /// <summary>
+    /// True when a mute toggle differs from the last system-read mute state.
+    /// </summary>
+    public bool IsUserMuteChange(bool newIsMuted) => newIsMuted != _lastMute;
 
     [RelayCommand]
     public void Refresh()

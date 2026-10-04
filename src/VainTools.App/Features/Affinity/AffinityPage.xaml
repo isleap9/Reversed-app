@@ -17,6 +17,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- Header -->
@@ -145,8 +146,54 @@
                     </ItemsControl>
                     <Button Content="Apply Settings" Margin="0,8,0,0"
                             Command="{Binding ApplyAffinityCommand}" />
+                    <Button Content="Save as Rule" Margin="0,8,0,0"
+                            Command="{Binding SaveRuleCommand}" />
                 </StackPanel>
             </ScrollViewer>
+        </Border>
+
+        <!-- Saved Rules -->
+        <Border Grid.Row="4" Padding="16" CornerRadius="8"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                BorderThickness="1">
+            <StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Saved Rules" FontWeight="SemiBold"
+                               VerticalAlignment="Center" />
+                    <Button Grid.Column="1" Content="Reapply Rules"
+                            Command="{Binding ApplyRulesCommand}" />
+                </Grid>
+                <TextBlock Text="Rules persist across sessions and reapply to matching process names."
+                           Margin="0,4,0,0"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                <ItemsControl ItemsSource="{Binding Rules}" Margin="0,8,0,0">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="services:AffinityRule">
+                            <Grid Padding="8" ColumnSpacing="16">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding ProcessName}"
+                                           FontWeight="SemiBold" VerticalAlignment="Center" />
+                                <TextBlock Grid.Column="1" Text="{Binding Mask}"
+                                           FontSize="12" VerticalAlignment="Center"
+                                           Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                <Button Grid.Column="2" Content="Delete"
+                                        Command="{Binding DataContext.DeleteRuleCommand, ElementName=AffinityRoot}"
+                                        CommandParameter="{Binding}"
+                                        VerticalAlignment="Center" />
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
         </Border>
     </Grid>
 </Page>

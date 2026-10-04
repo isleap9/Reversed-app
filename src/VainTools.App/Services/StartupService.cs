@@ -113,6 +113,38 @@ public sealed partial class StartupService : IStartupService
     }
 
     /// <inheritdoc />
+    public void DeleteRunKeyEntry(StartupEntry entry)
+    {
+        // Run-key entries are only ever written to the non-RunOnce Run key.
+        var location = Array.Find(RunKeyLocations, l =>
+            l.Source == entry.Source &&
+            !l.Path.EndsWith("RunOnce", StringComparison.OrdinalIgnoreCase));
+
+        var hive = location.Hive ?? (entry.Source == "HKCU" ? Registry.CurrentUser : Registry.LocalMachine);
+        var path = location.Path ?? @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+
+        using var key = hive.OpenSubKey(path, writable: true)
+            ?? throw new InvalidOperationException(
+                $"Cannot open {entry.Source}\\{path} for writing. Run Vain Tools as administrator.");
+
+        // Look for the value under both the plain and the '-' prefixed name.
+        var storedName = key.GetValue(entry.Name) is not null
+            ? entry.Name
+            : key.GetValue("-" + entry.Name) is not null
+                ? "-" + entry.Name
+                : null;
+
+        if (storedName is null)
+        {
+            throw new InvalidOperationException($"Startup entry \"{entry.Name}\" no longer exists.");
+        }
+
+        key.DeleteValue(storedName, throwOnMissingValue: false);
+
+        _logger.LogInformation("Deleted Run key entry {Name} in {Source}", entry.Name, entry.Source);
+    }
+
+    /// <inheritdoc />
     public async Task<IReadOnlyList<StartupEntry>> GetScheduledTasksAsync(CancellationToken cancellationToken = default)
     {
         var entries = new List<StartupEntry>();
@@ -188,6 +220,26 @@ public sealed partial class StartupService : IStartupService
 
         _logger.LogInformation("{Action} scheduled task {TaskName}",
             isEnabled ? "Enabled" : "Disabled", taskName);
+    }
+
+    /// <inheritdoc />
+    public async Task DeleteScheduledTaskAsync(StartupEntry entry, CancellationToken cancellationToken = default)
+    {
+        // entry.Command is the task's folder (e.g. "\Microsoft\Edge\" or "\"),
+        // so concatenating keeps the separator intact.
+        var taskName = entry.Command + entry.Name;
+
+        var result = await _processRunner
+            .RunAsync("schtasks.exe", $"/Delete /TN \"{taskName}\" /F")
+            .ConfigureAwait(false);
+
+        if (result.ExitCode != 0)
+        {
+            throw new InvalidOperationException(
+                $"schtasks.exe failed for \"{taskName}\" (exit {result.ExitCode}). {result.StdErr.Trim()}");
+        }
+
+        _logger.LogInformation("Deleted scheduled task {TaskName}", taskName);
     }
 
     /// <summary>Splits schtasks /FO LIST /V output into one string per task record.</summary>

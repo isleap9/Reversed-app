@@ -29,7 +29,33 @@ public interface IAffinityService
     /// Gets the total number of CPU cores available.
     /// </summary>
     int GetCpuCount();
+
+    /// <summary>
+    /// Reads all saved affinity rules.
+    /// </summary>
+    IReadOnlyList<AffinityRule> GetRules();
+
+    /// <summary>
+    /// Saves an affinity rule for a process name. Overwrites any existing rule.
+    /// </summary>
+    void SaveRule(string processName, ulong mask);
+
+    /// <summary>
+    /// Deletes the saved affinity rule for a process name.
+    /// </summary>
+    void DeleteRule(string processName);
+
+    /// <summary>
+    /// Reapplies all saved rules to currently running processes with matching
+    /// names. Returns the number of processes updated.
+    /// </summary>
+    int ApplyRules();
 }
+
+/// <summary>
+/// A saved CPU affinity rule: processes with this name get this mask.
+/// </summary>
+public sealed record AffinityRule(string ProcessName, ulong Mask);
 
 /// <summary>
 /// Represents a running process with basic information.

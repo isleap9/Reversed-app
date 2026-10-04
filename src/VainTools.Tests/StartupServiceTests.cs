@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Win32;
 using Moq;
 using VainTools.App.Services;
 using Xunit;
@@ -170,5 +171,81 @@ public sealed class StartupServiceTests
 
         Assert.Throws<InvalidOperationException>(
             () => _service.ToggleRunKeyEntry(entry, isEnabled: false));
+    }
+
+    [Fact]
+    public async Task DeleteScheduledTaskAsync_InvokesSchtasksDelete()
+    {
+        var entry = new StartupEntry("Update", @"\Microsoft\Edge\", "Scheduled Task", true);
+
+        await _service.DeleteScheduledTaskAsync(entry);
+
+        _processRunnerMock.Verify(
+            x => x.RunAsync("schtasks.exe", "/Delete /TN \"\\Microsoft\\Edge\\Update\" /F"),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteScheduledTaskAsync_WhenSchtasksFails_Throws()
+    {
+        _processRunnerMock
+            .Setup(x => x.RunAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(new ProcessResult(1, string.Empty, "ERROR: Access is denied."));
+
+        var entry = new StartupEntry("VainToolsTest", @"\", "Scheduled Task", true);
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _service.DeleteScheduledTaskAsync(entry));
+
+        Assert.Contains("Access is denied", ex.Message);
+    }
+
+    [Fact]
+    public void DeleteRunKeyEntry_RemovesPlainValue()
+    {
+        var name = "VainToolsTest_" + Guid.NewGuid().ToString("N");
+        using var key = Registry.CurrentUser.OpenSubKey(
+            @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", writable: true)!;
+        key.SetValue(name, @"C:\Test.exe", RegistryValueKind.String);
+
+        try
+        {
+            _service.DeleteRunKeyEntry(new StartupEntry(name, @"C:\Test.exe", "HKCU", true));
+
+            Assert.Null(key.GetValue(name));
+        }
+        finally
+        {
+            key.DeleteValue(name, throwOnMissingValue: false);
+        }
+    }
+
+    [Fact]
+    public void DeleteRunKeyEntry_RemovesDisabledMarkerValue()
+    {
+        var name = "VainToolsTest_" + Guid.NewGuid().ToString("N");
+        using var key = Registry.CurrentUser.OpenSubKey(
+            @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", writable: true)!;
+        key.SetValue("-" + name, @"C:\Test.exe", RegistryValueKind.String);
+
+        try
+        {
+            _service.DeleteRunKeyEntry(new StartupEntry(name, @"C:\Test.exe", "HKCU", false));
+
+            Assert.Null(key.GetValue("-" + name));
+        }
+        finally
+        {
+            key.DeleteValue("-" + name, throwOnMissingValue: false);
+        }
+    }
+
+    [Fact]
+    public void DeleteRunKeyEntry_WhenEntryIsGone_Throws()
+    {
+        var entry = new StartupEntry("VainToolsDefinitelyMissing", @"\", "HKCU", true);
+
+        Assert.Throws<InvalidOperationException>(
+            () => _service.DeleteRunKeyEntry(entry));
     }
 }

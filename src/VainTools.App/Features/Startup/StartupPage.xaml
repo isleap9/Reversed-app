@@ -64,6 +64,7 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0">
                                             <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
@@ -79,6 +80,10 @@
                                                       IsOn="{Binding IsEnabled, Mode=TwoWay}"
                                                       Toggled="OnRunKeyToggled"
                                                       VerticalAlignment="Center" />
+                                        <Button Grid.Column="2" Content="Delete"
+                                                Command="{Binding DataContext.DeleteRunKeyEntryCommand, ElementName=StartupRoot}"
+                                                CommandParameter="{Binding}"
+                                                VerticalAlignment="Center" />
                                     </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
@@ -100,6 +105,7 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
                                         <StackPanel Grid.Column="0">
                                             <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
@@ -115,6 +121,10 @@
                                                       IsOn="{Binding IsEnabled, Mode=TwoWay}"
                                                       Toggled="OnScheduledTaskToggled"
                                                       VerticalAlignment="Center" />
+                                        <Button Grid.Column="2" Content="Delete"
+                                                Command="{Binding DataContext.DeleteScheduledTaskCommand, ElementName=StartupRoot}"
+                                                CommandParameter="{Binding}"
+                                                VerticalAlignment="Center" />
                                     </Grid>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>

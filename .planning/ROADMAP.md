@@ -18,7 +18,7 @@ of their depth.
 - [x] **Phase 2: Home & Vain Tools** - System summary, quick actions, `.vain` import, restore defaults
 - [x] **Phase 3: General & System** - Explorer, context menu, visual, date/time, visibility, system tweaks
 - [x] **Phase 4: Security, Performance & Power** - Security toggles, timer/MPO, power plan editor (completed 2026-10-03)
-- [ ] **Phase 5: Network, Sound, Affinity & Startup** - Adapters/DNS/NTP, audio, CPU affinity, startup entries
+- [x] **Phase 5: Network, Sound, Affinity & Startup** - Adapters/DNS/NTP, audio, CPU affinity, startup entries (completed 2026-10-04)
 - [ ] **Phase 6: Apps** - Appx Manager, Installed Apps, Optional Features, Store
 - [ ] **Phase 7: Tools** - Device Cleaner, Drive Scanner, Driver Manager
 - [ ] **Phase 8: NVIDIA DRS Editor** - Driver settings read/stage/apply, per-game profiles, `.vain` export
@@ -134,7 +134,7 @@ Plans:
 4. Affinity page can set CPU affinity for a running process and save the rule
 5. Startup page lists Run-key and scheduled-task entries, and can enable/disable/delete them
 
-**Plans:** 2/3 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 **Wave 1**
@@ -144,7 +144,10 @@ Plans:
 - [x] 05-02: Audio service and Sound page
 
 **Wave 3** *(blocked on Wave 2 completion)*
-- [ ] 05-03: Affinity service and Startup service with their pages
+- [x] 05-03: Affinity service and Startup service with their pages
+
+**Gap remediation**
+- [x] 05-04: Volume mixer (SND-02), affinity rule persistence (AFF-03), startup delete (STR-03), DNS/NTP path tests (NET-02/NET-03)
 
 ### Phase 6: Apps
 
@@ -271,7 +274,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Home & Vain Tools | 2/2 | Complete | 2026-10-03 |
 | 3. General & System | 3/3 | Complete | 2026-10-03 |
 | 4. Security, Performance & Power | 3/3 | Complete    | 2026-10-03 |
-| 5. Network, Sound, Affinity & Startup | 2/3 | In Progress|  |
+| 5. Network, Sound, Affinity & Startup | 4/4 | Complete | 2026-10-04 |
 | 6. Apps | 0/2 | Pending | - |
 | 7. Tools | 0/3 | Pending | - |
 | 8. NVIDIA DRS Editor | 0/3 | Pending | - |

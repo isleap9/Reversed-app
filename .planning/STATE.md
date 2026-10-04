@@ -2,17 +2,17 @@
 gsd_state_version: "1.0"
 milestone: v2.0
 status: executing
-stopped_at: Phase 5 verified — gaps found
+stopped_at: Phase 5 complete, verified PASS
 last_updated: "2026-10-04T00:45:00.000Z"
 state_head: 254e5330b27107f5e03d5cbbb8cd4064a408ab6a
 progress:
   total_phases: 10
-  completed_phases: 4
-  total_plans: 8
-  completed_plans: 6
+  completed_phases: 5
+  total_plans: 9
+  completed_plans: 7
 name: Real Vain Toolbox Rebuild
-current_phase_name: Network, Sound, Affinity & Startup
-current_phase: 5
+current_phase_name: Apps
+current_phase: 6
 ---
 
 # Vain Toolbox - Project State
@@ -22,17 +22,15 @@ current_phase: 5
 See: .planning/PROJECT.md (updated 2026-10-03)
 
 **Core value:** The full Vain Toolbox feature surface, reimplemented in WinUI 3 with a faithful navigation structure.
-**Current focus:** Phase 5 — Network, Sound, Affinity & Startup
+**Current focus:** Phase 6 — Apps (Appx Manager, Installed Apps, Optional Features, Store)
 
 ## Current Position
 
-Phase 5 of 10 — Network, Sound, Affinity & Startup
-Plan 3 of 3 — complete, but phase verification found gaps
-Status: 3 requirements unmet (SND-02 volume mixer, AFF-03 affinity rule persistence,
-STR-03 delete startup entry); 2 unverified (NET-02/NET-03 DNS/NTP writes)
+Phase 6 of 10 — Apps
+Status: Phase 5 verified PASS (14/14 requirements); ready to discuss/plan Phase 6
 
 ```
-[===============                                   ] 45%
+[==================                                ] 50%
 ```
 
 ## Session Tracking
@@ -43,19 +41,24 @@ STR-03 delete startup entry); 2 unverified (NET-02/NET-03 DNS/NTP writes)
   fixed, but three requirements are not implemented. See
   `.planning/phases/05-network-sound-affinity-startup/VERIFICATION.md`.
 
-### Phase 5 Outcome
+### Phase 5 Outcome (completed 2026-10-04, verified PASS)
 
 - `Services/AffinityService.cs` — P/Invoke affinity read/write, process enumeration,
-  system mask; skips PID 0/4 and protected processes
+  system mask; skips PID 0/4 and protected processes; QWORD rules under
+  `HKCU\SOFTWARE\VainTools\AffinityRules` with save/delete/reapply (05-04)
 - `Services/StartupService.cs` — Run/RunOnce across HKCU/HKLM/WOW6432Node, plus
-  boot/logon scheduled tasks via `schtasks.exe`
-- `Services/SoundService.cs` — WASAPI device enumeration and volume/mute control
-- `Services/NetworkService.cs` — adapter enumeration and DNS/NTP settings
+  boot/logon scheduled tasks via `schtasks.exe`; enable/disable AND delete for
+  both entry kinds, deletes confirmation-gated (05-04)
+- `Services/SoundService.cs` — WASAPI device enumeration and volume/mute control;
+  Sound page has a working volume mixer (device picker, slider, mute) with
+  echo-guarded handlers (05-04)
+- `Services/NetworkService.cs` — adapter enumeration and DNS/NTP settings; DNS/NTP
+  registry paths pinned by `NetworkPageViewModelTests` (05-04)
 - Pages: Network, Sound, Affinity, Startup (all custom layouts per the UI-SPEC)
-- **225 tests pass** (was 172); 0 warnings / 0 errors
+- **265 tests pass** (was 225); 0 warnings / 0 errors
 - Runtime-verified: all 28 pages navigate; Affinity read 168 processes and 16 CPUs on
   this machine; Startup read 5 Run keys + 64 boot/logon tasks; Sound read 4 real
-  devices with correct friendly names
+  devices with correct friendly names; app launches ("Vain Tools", Responding=True)
 
 ### Phase 5 notes — wave 3 was committed without compiling
 
@@ -247,11 +250,13 @@ overwriting files only partially read — delete and rewrite, or use `patch`.
 
 ## Session Continuity
 
-**Last session:** 2026-10-04T00:45:00.000Z
-**Stopped at:** Phase 5 verified — gaps found, 3 requirements unmet
-**Resume file:** .planning/phases/05-network-sound-affinity-startup/VERIFICATION.md
+**Last session:** 2026-10-04T00:00:00.000Z (UTC Sun Oct 04 2026)
+**Stopped at:** Phase 5 complete, verified PASS (14/14)
+**Resume file:** none — Phase 6 (Apps) ready to discuss/plan
 
-Resume with: close the gaps in Phase 5 (SND-02, AFF-03, STR-03) before planning Phase 6
+Resume with: `/gsd-discuss-phase 6` or `/gsd-plan-phase 6`
+**Resumed:** 2026-10-04 — session resumed, proceeding to close Phase 5 gaps (05-04 remediation)
+**Completed:** 2026-10-04 — 05-04 executed, verification PASS, tracking updated
 
 ---
 *This state file tracks progress between development sessions.*

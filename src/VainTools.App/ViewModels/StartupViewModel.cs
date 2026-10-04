@@ -137,5 +137,65 @@ public partial class StartupViewModel : ViewModelBase
     /// </summary>
     public static bool IsUserToggle(StartupEntry entry, bool newIsOn) => entry.IsEnabled != newIsOn;
 
+    [RelayCommand(CanExecute = nameof(CanToggleEntry))]
+    public async Task DeleteRunKeyEntryAsync(StartupEntry entry)
+    {
+        try
+        {
+            var confirmed = await _dialogs.ConfirmAsync(
+                "Delete Startup Entry",
+                $"Delete \"{entry.Name}\" from {entry.Source}? This cannot be undone.",
+                confirmText: "Delete");
+
+            if (!confirmed)
+            {
+                StatusMessage = "Delete cancelled.";
+                return;
+            }
+
+            _startupService.DeleteRunKeyEntry(entry);
+            _infoBar.ShowSuccess("Entry deleted", $"{entry.Name} has been deleted.");
+            await RefreshAsync();
+            StatusMessage = $"Deleted {entry.Name}";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete Run key entry");
+            ErrorMessage = ex.Message;
+            StatusMessage = $"Could not delete entry: {ex.Message}";
+            _infoBar.ShowError("Delete failed", ex.Message);
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanToggleEntry))]
+    public async Task DeleteScheduledTaskAsync(StartupEntry entry)
+    {
+        try
+        {
+            var confirmed = await _dialogs.ConfirmAsync(
+                "Delete Scheduled Task",
+                $"Delete task \"{entry.Name}\"? This cannot be undone.",
+                confirmText: "Delete");
+
+            if (!confirmed)
+            {
+                StatusMessage = "Delete cancelled.";
+                return;
+            }
+
+            await _startupService.DeleteScheduledTaskAsync(entry);
+            _infoBar.ShowSuccess("Task deleted", $"{entry.Name} has been deleted.");
+            await RefreshAsync();
+            StatusMessage = $"Deleted {entry.Name}";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete scheduled task");
+            ErrorMessage = ex.Message;
+            StatusMessage = $"Could not delete task: {ex.Message}";
+            _infoBar.ShowError("Delete failed", ex.Message);
+        }
+    }
+
     private static bool CanToggleEntry(StartupEntry? entry) => entry is not null;
 }

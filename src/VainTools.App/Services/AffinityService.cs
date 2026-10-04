@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
 
 namespace VainTools.App.Services;
 
@@ -16,11 +17,16 @@ public sealed partial class AffinityService : IAffinityService
     /// <summary>The Windows "System" process — affinity cannot be read or changed.</summary>
     private const int SystemProcessId = 4;
 
-    private readonly ILogger<AffinityService> _logger;
+    /// <summary>Default HKCU location for saved affinity rules.</summary>
+    private const string DefaultRulesKeyPath = @"SOFTWARE\VainTools\AffinityRules";
 
-    public AffinityService(ILogger<AffinityService> logger)
+    private readonly ILogger<AffinityService> _logger;
+    private readonly string _rulesKeyPath;
+
+    public AffinityService(ILogger<AffinityService> logger, string? rulesKeyPath = null)
     {
         _logger = logger;
+        _rulesKeyPath = string.IsNullOrWhiteSpace(rulesKeyPath) ? DefaultRulesKeyPath : rulesKeyPath;
     }
 
     /// <inheritdoc />
@@ -113,6 +119,115 @@ public sealed partial class AffinityService : IAffinityService
     /// <inheritdoc />
     public int GetCpuCount() => Environment.ProcessorCount;
 
+    /// <inheritdoc />
+    public IReadOnlyList<AffinityRule> GetRules()
+    {
+        var rules = new List<AffinityRule>();
+
+        try
+        {
+            using var key = Registry.CurrentUser.OpenSubKey(_rulesKeyPath);
+            if (key is null)
+            {
+                return rules;
+            }
+
+            foreach (var valueName in key.GetValueNames())
+            {
+                if (string.IsNullOrWhiteSpace(valueName))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    rules.Add(new AffinityRule(valueName, ReadMask(key, valueName)));
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "Skipped unreadable affinity rule {Rule}", valueName);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to read affinity rules from {Path}", _rulesKeyPath);
+        }
+
+        return rules;
+    }
+
+    /// <inheritdoc />
+    public void SaveRule(string processName, ulong mask)
+    {
+        if (string.IsNullOrWhiteSpace(processName))
+        {
+            throw new ArgumentException("Process name must not be empty.", nameof(processName));
+        }
+
+        if (mask == 0)
+        {
+            throw new ArgumentException("Affinity mask must select at least one CPU.", nameof(mask));
+        }
+
+        using var key = Registry.CurrentUser.CreateSubKey(_rulesKeyPath)
+            ?? throw new InvalidOperationException($"Cannot open {_rulesKeyPath} for writing.");
+
+        // Registry QWord is signed; round-trip the bits without loss.
+        key.SetValue(processName, unchecked((long)mask), RegistryValueKind.QWord);
+
+        _logger.LogInformation("Saved affinity rule for {ProcessName}: {Mask:X}", processName, mask);
+    }
+
+    /// <inheritdoc />
+    public void DeleteRule(string processName)
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(_rulesKeyPath, writable: true)
+            ?? throw new InvalidOperationException($"Affinity rule \"{processName}\" no longer exists.");
+
+        if (key.GetValue(processName) is null)
+        {
+            throw new InvalidOperationException($"Affinity rule \"{processName}\" no longer exists.");
+        }
+
+        key.DeleteValue(processName, throwOnMissingValue: false);
+
+        _logger.LogInformation("Deleted affinity rule for {ProcessName}", processName);
+    }
+
+    /// <inheritdoc />
+    public int ApplyRules()
+    {
+        var rules = GetRules();
+        if (rules.Count == 0)
+        {
+            return 0;
+        }
+
+        var applied = 0;
+
+        foreach (var rule in rules)
+        {
+            using var process = FindProcess(rule.ProcessName);
+            if (process is null)
+            {
+                continue;
+            }
+
+            try
+            {
+                SetAffinityMask(process.Id, rule.Mask);
+                applied++;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Could not apply affinity rule to {ProcessName}", rule.ProcessName);
+            }
+        }
+
+        return applied;
+    }
+
     private static int CountBits(ulong value)
     {
         var count = 0;
@@ -122,6 +237,43 @@ public sealed partial class AffinityService : IAffinityService
             value &= value - 1;
         }
         return count;
+    }
+
+    /// <summary>Reads a rule mask back, tolerating the shapes a QWord can unbox as.</summary>
+    private static ulong ReadMask(RegistryKey key, string valueName)
+    {
+        var raw = key.GetValue(valueName)
+            ?? throw new InvalidOperationException($"Affinity rule \"{valueName}\" has no value.");
+
+        return raw switch
+        {
+            long qword => unchecked((ulong)qword),
+            int dword => unchecked((ulong)(uint)dword),
+            string text when ulong.TryParse(text, out var parsed) => parsed,
+            _ => throw new InvalidOperationException(
+                $"Affinity rule \"{valueName}\" is not a numeric mask."),
+        };
+    }
+
+    /// <summary>Finds the first running process with this name. Caller disposes.</summary>
+    private static Process? FindProcess(string processName)
+    {
+        var wanted = processName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase)
+            ? processName[..^4]
+            : processName;
+
+        foreach (var process in Process.GetProcessesByName(wanted))
+        {
+            if (process.Id is IdleProcessId or SystemProcessId)
+            {
+                process.Dispose();
+                continue;
+            }
+
+            return process;
+        }
+
+        return null;
     }
 
     [LibraryImport("kernel32.dll", SetLastError = true)]

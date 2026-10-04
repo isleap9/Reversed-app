@@ -24,6 +24,8 @@ recognise it as Vain Toolbox — same pages, same grouping, same capabilities.
 - ✓ Navigation shell with the real 28-page Vain Toolbox tree — Phase 1
 - ✓ Home page with live machine summary; `.vain` profile import with validation — Phase 2
 - ✓ Registry tweak engine plus the General and System pages (7 pages, 20 tweaks) — Phase 3
+- ✓ Security, Performance and Power pages with a power-plan editor — Phase 4
+- ✓ Network, Sound, Affinity and Startup pages (adapters/DNS/NTP, volume mixer, affinity rules, startup delete) — Phase 5
 
 ### Active
 

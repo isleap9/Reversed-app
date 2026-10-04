@@ -37,6 +37,9 @@ public partial class AffinityViewModel : ViewModelBase
     /// <summary>CPU affinity checkboxes for the selected process.</summary>
     public ObservableCollection<CpuAffinityViewModel> Cpus { get; } = [];
 
+    /// <summary>Saved affinity rules (process name → mask).</summary>
+    public ObservableCollection<AffinityRule> Rules { get; } = [];
+
     [ObservableProperty]
     public partial ProcessInfo? SelectedProcess { get; set; }
 
@@ -70,6 +73,8 @@ public partial class AffinityViewModel : ViewModelBase
             {
                 Processes.Add(process);
             }
+
+            ReloadRules();
 
             StatusMessage = $"{processes.Count} processes found";
         }
@@ -160,6 +165,131 @@ public partial class AffinityViewModel : ViewModelBase
 
     private bool CanApplyAffinity() => SelectedProcess is not null;
 
-    partial void OnSelectedProcessChanged(ProcessInfo? value) => ApplyAffinityCommand.NotifyCanExecuteChanged();
+    [RelayCommand(CanExecute = nameof(CanApplyAffinity))]
+    public void SaveRule()
+    {
+        if (SelectedProcess is null)
+        {
+            return;
+        }
+
+        try
+        {
+            ErrorMessage = string.Empty;
+
+            var mask = BuildMaskFromCheckboxes();
+            if (mask == 0)
+            {
+                ErrorMessage = "Select at least one CPU before saving a rule.";
+                StatusMessage = "Could not save rule: no CPU selected.";
+                return;
+            }
+
+            _affinityService.SaveRule(SelectedProcess.Name, mask);
+            ReloadRules();
+            StatusMessage = $"Rule saved for {SelectedProcess.Name}";
+            _infoBar.ShowSuccess("Rule saved", $"Affinity rule for {SelectedProcess.Name} will be reapplied on demand.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save affinity rule");
+            ErrorMessage = ex.Message;
+            StatusMessage = $"Could not save rule: {ex.Message}";
+            _infoBar.ShowError("Save failed", ex.Message);
+        }
+    }
+
+    [RelayCommand]
+    public async Task DeleteRuleAsync(AffinityRule rule)
+    {
+        if (rule is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var confirmed = await _dialogs.ConfirmAsync(
+                "Delete Affinity Rule",
+                $"Delete the saved rule for \"{rule.ProcessName}\"? This cannot be undone.",
+                confirmText: "Delete");
+
+            if (!confirmed)
+            {
+                StatusMessage = "Delete cancelled.";
+                return;
+            }
+
+            _affinityService.DeleteRule(rule.ProcessName);
+            ReloadRules();
+            StatusMessage = $"Deleted rule for {rule.ProcessName}";
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to delete affinity rule");
+            ErrorMessage = ex.Message;
+            StatusMessage = $"Could not delete rule: {ex.Message}";
+            _infoBar.ShowError("Delete failed", ex.Message);
+        }
+    }
+
+    [RelayCommand]
+    public void ApplyRules()
+    {
+        try
+        {
+            ErrorMessage = string.Empty;
+
+            var applied = _affinityService.ApplyRules();
+            StatusMessage = applied == 0
+                ? "No saved rules matched a running process"
+                : $"Reapplied {applied} rule{(applied == 1 ? string.Empty : "s")}";
+            _infoBar.ShowSuccess("Rules reapplied", StatusMessage);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to reapply affinity rules");
+            ErrorMessage = ex.Message;
+            StatusMessage = $"Could not reapply rules: {ex.Message}";
+            _infoBar.ShowError("Reapply failed", ex.Message);
+        }
+    }
+
+    private ulong BuildMaskFromCheckboxes()
+    {
+        ulong mask = 0;
+        foreach (var cpu in Cpus)
+        {
+            if (cpu.IsEnabled)
+            {
+                mask |= 1UL << cpu.Index;
+            }
+        }
+
+        return mask;
+    }
+
+    private void ReloadRules()
+    {
+        try
+        {
+            var rules = _affinityService.GetRules();
+            Rules.Clear();
+            foreach (var rule in rules)
+            {
+                Rules.Add(rule);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to load affinity rules");
+        }
+    }
+
+    partial void OnSelectedProcessChanged(ProcessInfo? value)
+    {
+        ApplyAffinityCommand.NotifyCanExecuteChanged();
+        SaveRuleCommand.NotifyCanExecuteChanged();
+    }
 }
 
