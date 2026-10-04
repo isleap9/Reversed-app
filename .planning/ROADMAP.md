@@ -166,8 +166,14 @@ Plans:
 **Plans:** 2 plans
 
 Plans:
+**Wave 1**
 - [ ] 06-01: Package service (Appx + uninstall registry + optional features) and three pages
+
+**Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 06-02: Store integration and Store page
+
+**Cross-cutting constraints:**
+- All ViewModels use partial properties (MVVMTK0045 compliance)
 
 ### Phase 7: Tools
 
