@@ -21,6 +21,11 @@ public interface IAffinityService
     void SetAffinityMask(int processId, ulong mask);
 
     /// <summary>
+    /// Gets the system-wide affinity mask (which CPUs are available at all).
+    /// </summary>
+    ulong GetSystemAffinityMask();
+
+    /// <summary>
     /// Gets the total number of CPU cores available.
     /// </summary>
     int GetCpuCount();

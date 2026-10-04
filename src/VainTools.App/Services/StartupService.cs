@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
-using System.Management;
 
 namespace VainTools.App.Services;
 
@@ -9,15 +8,25 @@ namespace VainTools.App.Services;
 /// </summary>
 public sealed partial class StartupService : IStartupService
 {
+    private readonly IProcessRunner _processRunner;
     private readonly ILogger<StartupService> _logger;
 
-    private static readonly string[] RunKeyPaths =
+    /// <summary>
+    /// Run/RunOnce key locations, in the order they are displayed.
+    /// A value name prefixed with '-' is a Vain Tools convention meaning "disabled".
+    /// </summary>
+    private static readonly (RegistryKey Hive, string Path, string Source)[] RunKeyLocations =
     [
-        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+        (Registry.CurrentUser, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", "HKCU"),
+        (Registry.CurrentUser, @"SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce", "HKCU"),
+        (Registry.LocalMachine, @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", "HKLM"),
+        (Registry.LocalMachine, @"SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce", "HKLM"),
+        (Registry.LocalMachine, @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run", "HKLM"),
     ];
 
-    public StartupService(ILogger<StartupService> logger)
+    public StartupService(IProcessRunner processRunner, ILogger<StartupService> logger)
     {
+        _processRunner = processRunner;
         _logger = logger;
     }
 
@@ -26,33 +35,34 @@ public sealed partial class StartupService : IStartupService
     {
         var entries = new List<StartupEntry>();
 
-        // HKCU Run key
-        using (var key = Registry.CurrentUser.OpenSubKey(RunKeyPaths[0]))
+        foreach (var (hive, path, source) in RunKeyLocations)
         {
-            if (key != null)
+            try
             {
+                using var key = hive.OpenSubKey(path);
+                if (key is null)
+                {
+                    continue;
+                }
+
                 foreach (var valueName in key.GetValueNames())
                 {
                     if (string.IsNullOrWhiteSpace(valueName))
+                    {
                         continue;
+                    }
+
                     var command = key.GetValue(valueName)?.ToString() ?? string.Empty;
-                    entries.Add(new StartupEntry(valueName, command, "HKCU", IsEnabled(valueName)));
+                    entries.Add(new StartupEntry(
+                        DisplayName(valueName),
+                        command,
+                        source,
+                        IsEnabled(valueName)));
                 }
             }
-        }
-
-        // HKLM Run key
-        using (var key = Registry.LocalMachine.OpenSubKey(RunKeyPaths[0]))
-        {
-            if (key != null)
+            catch (Exception ex)
             {
-                foreach (var valueName in key.GetValueNames())
-                {
-                    if (string.IsNullOrWhiteSpace(valueName))
-                        continue;
-                    var command = key.GetValue(valueName)?.ToString() ?? string.Empty;
-                    entries.Add(new StartupEntry(valueName, command, "HKLM", IsEnabled(valueName)));
-                }
+                _logger.LogWarning(ex, "Failed to read Run key {Source}\\{Path}", source, path);
             }
         }
 
@@ -62,124 +72,188 @@ public sealed partial class StartupService : IStartupService
     /// <inheritdoc />
     public void ToggleRunKeyEntry(StartupEntry entry, bool isEnabled)
     {
-        var hive = entry.Source == "HKCU" ? Registry.CurrentUser : Registry.LocalMachine;
-        using var key = hive.OpenSubKey(RunKeyPaths[0], writable: true);
-        if (key == null)
+        // Run-key entries are only ever written to the non-RunOnce Run key.
+        var location = Array.Find(RunKeyLocations, l =>
+            l.Source == entry.Source &&
+            !l.Path.EndsWith("RunOnce", StringComparison.OrdinalIgnoreCase));
+
+        var hive = location.Hive ?? (entry.Source == "HKCU" ? Registry.CurrentUser : Registry.LocalMachine);
+        var path = location.Path ?? @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+
+        using var key = hive.OpenSubKey(path, writable: true)
+            ?? throw new InvalidOperationException(
+                $"Cannot open {entry.Source}\\{path} for writing. Run Vain Tools as administrator.");
+
+        // Look for the value under both the plain and the '-' prefixed name.
+        var storedName = key.GetValue(entry.Name) is not null
+            ? entry.Name
+            : key.GetValue("-" + entry.Name) is not null
+                ? "-" + entry.Name
+                : null;
+
+        if (storedName is null)
         {
-            throw new InvalidOperationException($"Cannot open {entry.Source} Run key for writing.");
+            throw new InvalidOperationException($"Startup entry \"{entry.Name}\" no longer exists.");
         }
 
-        var currentName = entry.Name;
-        var isEnabledCurrently = IsEnabled(currentName);
-
-        if (isEnabled == isEnabledCurrently)
+        var currentlyEnabled = IsEnabled(storedName);
+        if (currentlyEnabled == isEnabled)
         {
-            return; // No change needed
+            return;
         }
 
-        var command = key.GetValue(currentName)?.ToString() ?? string.Empty;
+        var command = key.GetValue(storedName)?.ToString() ?? string.Empty;
+        var newName = isEnabled ? entry.Name.TrimStart('-') : "-" + entry.Name.TrimStart('-');
 
-        if (isEnabled)
-        {
-            // Remove the '-' prefix to enable
-            var enabledName = currentName.TrimStart('-');
-            key.DeleteValue(currentName, throwOnMissingValue: false);
-            key.SetValue(enabledName, command);
-            _logger.LogInformation("Enabled Run key entry: {Name}", enabledName);
-        }
-        else
-        {
-            // Add the '-' prefix to disable
-            var disabledName = "-" + currentName;
-            key.DeleteValue(currentName, throwOnMissingValue: false);
-            key.SetValue(disabledName, command);
-            _logger.LogInformation("Disabled Run key entry: {Name}", disabledName);
-        }
+        key.DeleteValue(storedName, throwOnMissingValue: false);
+        key.SetValue(newName, command, RegistryValueKind.String);
+
+        _logger.LogInformation("{Action} Run key entry {Name} in {Source}",
+            isEnabled ? "Enabled" : "Disabled", entry.Name, entry.Source);
     }
 
     /// <inheritdoc />
-    public IReadOnlyList<StartupEntry> GetScheduledTasks()
+    public async Task<IReadOnlyList<StartupEntry>> GetScheduledTasksAsync(CancellationToken cancellationToken = default)
     {
         var entries = new List<StartupEntry>();
 
+        ProcessResult result;
         try
         {
-            // Query tasks that have a startup trigger
-            const string query = "SELECT Name, Path FROM Win32_StartupCommand";
-            using var searcher = new ManagementObjectSearcher(query);
-            using var results = searcher.Get();
-
-            foreach (ManagementObject task in results)
-            {
-                var name = task["Name"]?.ToString() ?? "Unknown";
-                var path = task["Path"]?.ToString() ?? string.Empty;
-                entries.Add(new StartupEntry(name, path, "Scheduled Task", IsTaskEnabled(name)));
-            }
+            result = await _processRunner.RunAsync("schtasks.exe", "/Query /FO LIST /V").ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to query scheduled tasks via WMI");
+            _logger.LogWarning(ex, "Failed to run schtasks.exe /Query");
+            return entries;
+        }
+
+        if (result.ExitCode != 0)
+        {
+            _logger.LogWarning("schtasks.exe /Query exited with {ExitCode}: {Error}",
+                result.ExitCode, result.StdErr.Trim());
+            return entries;
+        }
+
+        foreach (var record in SplitRecords(result.StdOut))
+        {
+            var fullName = Field(record, "TaskName");
+            if (string.IsNullOrWhiteSpace(fullName))
+            {
+                continue;
+            }
+
+            // Only tasks that run at boot or at logon belong on the Startup page.
+            var scheduleType = Field(record, "Schedule Type") ?? string.Empty;
+            if (!scheduleType.Contains("At system start up", StringComparison.OrdinalIgnoreCase) &&
+                !scheduleType.Contains("At logon time", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var status = Field(record, "Status") ?? string.Empty;
+            var (name, path) = SplitTaskPath(fullName);
+
+            entries.Add(new StartupEntry(
+                name,
+                path,
+                "Scheduled Task",
+                !status.Equals("Disabled", StringComparison.OrdinalIgnoreCase)));
         }
 
         return entries;
     }
 
     /// <inheritdoc />
-    public void ToggleScheduledTask(StartupEntry entry, bool isEnabled)
+    public async Task ToggleScheduledTaskAsync(StartupEntry entry, bool isEnabled, CancellationToken cancellationToken = default)
     {
-        try
-        {
-            const string query = "SELECT * FROM Win32_StartupCommand";
-            using var searcher = new ManagementObjectSearcher(query);
-            using var results = searcher.Get();
+        // MSFT_ScheduledTask does not support a WMI write path (Set-CimInstance returns
+        // "The requested operation is not supported"), so use schtasks.exe, which is the
+        // documented way to change a task's enabled state.
+        // entry.Command is the task's folder (e.g. "\Microsoft\Edge\" or "\"),
+        // so concatenating keeps the separator intact.
+        var taskName = entry.Command + entry.Name;
 
-            foreach (ManagementObject task in results)
+        var arguments = isEnabled
+            ? $"/Change /TN \"{taskName}\" /ENABLE"
+            : $"/Change /TN \"{taskName}\" /DISABLE";
+
+        var result = await _processRunner.RunAsync("schtasks.exe", arguments).ConfigureAwait(false);
+
+        if (result.ExitCode != 0)
+        {
+            throw new InvalidOperationException(
+                $"schtasks.exe failed for \"{taskName}\" (exit {result.ExitCode}). {result.StdErr.Trim()}");
+        }
+
+        _logger.LogInformation("{Action} scheduled task {TaskName}",
+            isEnabled ? "Enabled" : "Disabled", taskName);
+    }
+
+    /// <summary>Splits schtasks /FO LIST /V output into one string per task record.</summary>
+    private static IEnumerable<string> SplitRecords(string stdout)
+    {
+        var current = new System.Text.StringBuilder();
+
+        foreach (var line in stdout.Split('\n'))
+        {
+            var trimmed = line.TrimEnd('\r');
+
+            // Each record starts at the "HostName:" field.
+            if (trimmed.StartsWith("HostName:", StringComparison.OrdinalIgnoreCase) && current.Length > 0)
             {
-                var name = task["Name"]?.ToString();
-                if (name == entry.Name)
-                {
-                    // Win32_StartupCommand doesn't have Enable/Disable methods
-                    // We need to use the Task Scheduler COM API or schtasks.exe
-                    // For now, log that this requires elevation
-                    _logger.LogWarning(
-                        "Toggling scheduled task '{Name}' requires Task Scheduler API or schtasks.exe",
-                        entry.Name);
-                    return;
-                }
+                yield return current.ToString();
+                current.Clear();
+            }
+
+            if (trimmed.Length > 0)
+            {
+                current.AppendLine(trimmed);
             }
         }
-        catch (Exception ex)
+
+        if (current.Length > 0)
         {
-            _logger.LogWarning(ex, "Failed to toggle scheduled task '{Name}'", entry.Name);
+            yield return current.ToString();
         }
     }
 
+    /// <summary>Reads a "Field:   value" line out of one schtasks record.</summary>
+    private static string? Field(string record, string fieldName)
+    {
+        foreach (var line in record.Split('\n'))
+        {
+            var trimmed = line.TrimEnd('\r');
+            var colon = trimmed.IndexOf(':');
+            if (colon < 0)
+            {
+                continue;
+            }
+
+            var key = trimmed[..colon].Trim();
+            if (key.Equals(fieldName, StringComparison.OrdinalIgnoreCase))
+            {
+                return trimmed[(colon + 1)..].Trim();
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>Splits "\Microsoft\Edge\Update" into ("Update", "\Microsoft\Edge\").</summary>
+    private static (string Name, string Path) SplitTaskPath(string fullName)
+    {
+        var lastSeparator = fullName.LastIndexOf('\\');
+
+        return lastSeparator < 0
+            ? (fullName, "\\")
+            : (fullName[(lastSeparator + 1)..], fullName[..(lastSeparator + 1)]);
+    }
+
+    /// <summary>A value name prefixed with '-' is the Vain Tools "disabled" marker.</summary>
     private static bool IsEnabled(string valueName) => !valueName.StartsWith('-');
 
-    private static bool IsTaskEnabled(string taskName)
-    {
-        try
-        {
-            const string query = "SELECT * FROM Win32_StartupCommand";
-            using var searcher = new ManagementObjectSearcher(query);
-            using var results = searcher.Get();
-
-            foreach (ManagementObject task in results)
-            {
-                var name = task["Name"]?.ToString();
-                if (name == taskName)
-                {
-                    // Win32_StartupCommand doesn't expose enabled state directly
-                    // Assume enabled if found
-                    return true;
-                }
-            }
-        }
-        catch
-        {
-            // Ignore
-        }
-
-        return false;
-    }
+    /// <summary>Strips the '-' disabled marker for display.</summary>
+    private static string DisplayName(string valueName) => valueName.TrimStart('-');
 }
+

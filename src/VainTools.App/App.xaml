@@ -14,6 +14,7 @@
             <conv:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
             <conv:InvertedBooleanToVisibilityConverter x:Key="InverseBoolToVisibility" />
             <conv:InvertedBooleanConverter x:Key="InvertedBooleanConverter" />
+            <conv:NullToVisibilityConverter x:Key="NullToVisibility" />
         </ResourceDictionary>
     </Application.Resources>
 </Application>

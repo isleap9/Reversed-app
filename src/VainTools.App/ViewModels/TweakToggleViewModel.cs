@@ -17,6 +17,15 @@ public partial class TweakToggleViewModel : ObservableObject
     private readonly ILogger _logger;
     private bool _suppressWrite;
 
+    /// <summary>
+    /// The last state observed from the registry. A write is only issued when a toggle
+    /// change actually differs from this, because a TwoWay binding also pushes the
+    /// control's initial state back into <see cref="IsOn"/> after the page renders.
+    /// Treating that echo as a user action made every tweak page write to the registry
+    /// merely by being opened.
+    /// </summary>
+    private bool _observedOn;
+
     [ObservableProperty]
     public partial bool IsOn { get; set; }
 
@@ -51,6 +60,21 @@ public partial class TweakToggleViewModel : ObservableObject
     /// <summary>Raised after a successful write so the page can update its summary.</summary>
     public event EventHandler? Changed;
 
+    /// <summary>
+    /// Applies a toggle only when it differs from the last state observed from the
+    /// registry. Call this from the control's Toggled event; the control's initial state
+    /// arrives via the binding and must not be written back to the machine.
+    /// </summary>
+    public void ApplyToggle(bool enable)
+    {
+        if (enable == _observedOn)
+        {
+            return;
+        }
+
+        _ = WriteAsync(enable);
+    }
+
     /// <summary>Re-reads the current state from the registry.</summary>
     public void Refresh()
     {
@@ -67,6 +91,8 @@ public partial class TweakToggleViewModel : ObservableObject
                 // position rather than guessing.
                 _ => Tweak.DefaultWhenUnset == TweakState.Enabled,
             };
+
+            _observedOn = IsOn;
         }
         finally
         {
@@ -84,8 +110,9 @@ public partial class TweakToggleViewModel : ObservableObject
 
     partial void OnIsOnChanged(bool value)
     {
-        if (_suppressWrite)
+        if (_suppressWrite || value == _observedOn)
         {
+            // A no-op change (including the binding's initial push) must never write.
             return;
         }
 

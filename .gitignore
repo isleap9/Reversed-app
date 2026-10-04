@@ -19,3 +19,6 @@ Desktop.ini
 .planning/cache/
 .planning/todos/pending/
 .planning/todos/completed/
+
+# Reverse-engineering reference binaries (not source)
+*.exe

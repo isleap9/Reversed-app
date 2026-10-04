@@ -14,6 +14,7 @@ namespace VainTools.App.ViewModels;
 public partial class AffinityViewModel : ViewModelBase
 {
     private readonly IAffinityService _affinityService;
+    private readonly IRegistryTweakService _registry;
     private readonly IDialogService _dialogs;
     private readonly IInfoBarService _infoBar;
     private readonly ILogger<AffinityViewModel> _logger;
@@ -23,6 +24,12 @@ public partial class AffinityViewModel : ViewModelBase
 
     [ObservableProperty]
     public partial bool IsElevated { get; set; }
+
+    [ObservableProperty]
+    public partial bool IsLoading { get; set; }
+
+    [ObservableProperty]
+    public partial string ErrorMessage { get; set; } = string.Empty;
 
     /// <summary>Running processes found on the system.</summary>
     public ObservableCollection<ProcessInfo> Processes { get; } = [];
@@ -35,16 +42,18 @@ public partial class AffinityViewModel : ViewModelBase
 
     public AffinityViewModel(
         IAffinityService affinityService,
+        IRegistryTweakService registry,
         IDialogService dialogs,
         IInfoBarService infoBar,
         ILogger<AffinityViewModel> logger)
     {
         _affinityService = affinityService;
+        _registry = registry;
         _dialogs = dialogs;
         _infoBar = infoBar;
         _logger = logger;
         Title = "Affinity";
-        IsElevated = affinityService is AffinityService ? true : false;
+        IsElevated = registry.IsElevated;
     }
 
     [RelayCommand]
@@ -52,33 +61,47 @@ public partial class AffinityViewModel : ViewModelBase
     {
         try
         {
+            IsLoading = true;
+            ErrorMessage = string.Empty;
+
             var processes = _affinityService.GetProcesses();
             Processes.Clear();
             foreach (var process in processes)
             {
                 Processes.Add(process);
             }
+
             StatusMessage = $"{processes.Count} processes found";
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to get processes");
+            ErrorMessage = ex.Message;
             StatusMessage = $"Could not get processes: {ex.Message}";
             _infoBar.ShowError("Process enumeration failed", ex.Message);
         }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanSelectProcess))]
     public void SelectProcess(ProcessInfo process)
     {
         SelectedProcess = process;
         LoadAffinity(process.Id);
     }
 
+    private bool CanSelectProcess(ProcessInfo? process) => process is not null;
+
     private void LoadAffinity(int processId)
     {
         try
         {
+            IsLoading = true;
+            ErrorMessage = string.Empty;
+
             var mask = _affinityService.GetAffinityMask(processId);
             var cpuCount = _affinityService.GetCpuCount();
             Cpus.Clear();
@@ -92,17 +115,27 @@ public partial class AffinityViewModel : ViewModelBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load affinity for PID {ProcessId}", processId);
+            ErrorMessage = ex.Message;
             StatusMessage = $"Could not load affinity: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanApplyAffinity))]
     public void ApplyAffinity()
     {
-        if (SelectedProcess is null) return;
+        if (SelectedProcess is null)
+        {
+            return;
+        }
 
         try
         {
+            ErrorMessage = string.Empty;
+
             ulong mask = 0;
             foreach (var cpu in Cpus)
             {
@@ -119,30 +152,14 @@ public partial class AffinityViewModel : ViewModelBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to set affinity");
+            ErrorMessage = ex.Message;
             StatusMessage = $"Could not set affinity: {ex.Message}";
             _infoBar.ShowError("Affinity change failed", ex.Message);
         }
     }
+
+    private bool CanApplyAffinity() => SelectedProcess is not null;
+
+    partial void OnSelectedProcessChanged(ProcessInfo? value) => ApplyAffinityCommand.NotifyCanExecuteChanged();
 }
 
-/// <summary>
-/// Represents a CPU affinity checkbox.
-/// </summary>
-public sealed partial class CpuAffinityViewModel : ObservableObject
-{
-    [ObservableProperty]
-    public partial int Index { get; set; }
-
-    [ObservableProperty]
-    public partial int CoreIndex { get; set; }
-
-    [ObservableProperty]
-    public partial bool IsEnabled { get; set; }
-
-    public CpuAffinityViewModel(int index, int coreIndex, bool isEnabled)
-    {
-        Index = index;
-        CoreIndex = coreIndex;
-        IsEnabled = isEnabled;
-    }
-}

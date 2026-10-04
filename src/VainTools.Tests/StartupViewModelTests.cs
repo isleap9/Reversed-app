@@ -86,16 +86,106 @@ public sealed class StartupViewModelTests
     }
 
     [Fact]
+    public async Task RefreshAsync_PopulatesRunKeysAndScheduledTasks()
+    {
+        _startupServiceMock
+            .Setup(x => x.GetRunKeyEntries())
+            .Returns([new StartupEntry("OneDrive", @"C:\OneDrive.exe", "HKCU", true)]);
+        _startupServiceMock
+            .Setup(x => x.GetScheduledTasksAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new StartupEntry("EdgeUpdate", @"\Microsoft\Edge\", "Scheduled Task", true)]);
+
+        await _viewModel.RefreshCommand.ExecuteAsync(null);
+
+        Assert.Single(_viewModel.RunKeyEntries);
+        Assert.Single(_viewModel.ScheduledTasks);
+        Assert.False(_viewModel.IsLoading);
+        Assert.Contains("1 Run key entries", _viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public async Task RefreshAsync_WhenServiceFails_SetsErrorMessage()
+    {
+        _startupServiceMock
+            .Setup(x => x.GetRunKeyEntries())
+            .Throws(new InvalidOperationException("Registry access failed"));
+
+        await _viewModel.RefreshCommand.ExecuteAsync(null);
+
+        Assert.Contains("Registry access failed", _viewModel.ErrorMessage);
+        Assert.Contains("Could not load entries", _viewModel.StatusMessage);
+        Assert.False(_viewModel.IsLoading);
+    }
+
+    [Fact]
     public void ToggleRunKeyEntryCommand_CanExecute_WhenEntrySelected()
     {
-        var entry = new StartupEntryViewModel("test", "cmd", "HKCU", true);
+        var entry = new StartupEntry("test", "cmd", "HKCU", true);
+
         Assert.True(_viewModel.ToggleRunKeyEntryCommand.CanExecute(entry));
+        Assert.False(_viewModel.ToggleRunKeyEntryCommand.CanExecute(null));
     }
 
     [Fact]
     public void ToggleScheduledTaskCommand_CanExecute_WhenEntrySelected()
     {
-        var entry = new StartupEntryViewModel("test", "cmd", "Task", true);
+        var entry = new StartupEntry("test", "cmd", "Scheduled Task", true);
+
         Assert.True(_viewModel.ToggleScheduledTaskCommand.CanExecute(entry));
+        Assert.False(_viewModel.ToggleScheduledTaskCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public async Task ToggleRunKeyEntryAsync_FlipsStateAndReloads()
+    {
+        var entry = new StartupEntry("OneDrive", @"C:\OneDrive.exe", "HKCU", true);
+
+        await _viewModel.ToggleRunKeyEntryCommand.ExecuteAsync(entry);
+
+        _startupServiceMock.Verify(x => x.ToggleRunKeyEntry(entry, false), Times.Once);
+        Assert.Contains("Disabled OneDrive", _viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public async Task ToggleScheduledTaskAsync_FlipsStateAndReloads()
+    {
+        var entry = new StartupEntry("EdgeUpdate", @"\Microsoft\Edge\", "Scheduled Task", false);
+
+        await _viewModel.ToggleScheduledTaskCommand.ExecuteAsync(entry);
+
+        _startupServiceMock.Verify(
+            x => x.ToggleScheduledTaskAsync(entry, true, It.IsAny<CancellationToken>()),
+            Times.Once);
+        Assert.Contains("Enabled EdgeUpdate", _viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public void IsUserToggle_IgnoresProgrammaticBindingEcho()
+    {
+        // A toggle bound to a record also fires Toggled when the binding pushes the model
+        // value in. Treating that echo as a user action makes Refresh and Toggle recurse
+        // into each other without end — which crashed the app and mass-disabled tasks.
+        var enabled = new StartupEntry("A", "cmd", "HKCU", true);
+        var disabled = new StartupEntry("B", "cmd", "HKCU", false);
+
+        Assert.False(StartupViewModel.IsUserToggle(enabled, newIsOn: true));
+        Assert.False(StartupViewModel.IsUserToggle(disabled, newIsOn: false));
+
+        Assert.True(StartupViewModel.IsUserToggle(enabled, newIsOn: false));
+        Assert.True(StartupViewModel.IsUserToggle(disabled, newIsOn: true));
+    }
+
+    [Fact]
+    public async Task ToggleScheduledTaskAsync_WhenServiceFails_SetsErrorMessage()
+    {
+        _startupServiceMock
+            .Setup(x => x.ToggleScheduledTaskAsync(It.IsAny<StartupEntry>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Access is denied"));
+
+        var entry = new StartupEntry("EdgeUpdate", @"\Microsoft\Edge\", "Scheduled Task", true);
+        await _viewModel.ToggleScheduledTaskCommand.ExecuteAsync(entry);
+
+        Assert.Contains("Access is denied", _viewModel.ErrorMessage);
+        Assert.Contains("Could not toggle task", _viewModel.StatusMessage);
     }
 }

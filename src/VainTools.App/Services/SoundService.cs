@@ -350,6 +350,10 @@ public sealed class SoundService : ISoundService
         return (WasapiInterop.IAudioEndpointVolume)obj;
     }
 
+    /// <summary>Releases the string inside a PROPVARIANT returned by IPropertyStore.</summary>
+    [DllImport("ole32.dll")]
+    private static extern int PropVariantClear(ref WasapiInterop.PROPVARIANT pvar);
+
     /// <summary>Gets the friendly name of a device from its property store.</summary>
     private static string? GetDeviceFriendlyName(WasapiInterop.IMMDevice device)
     {
@@ -375,16 +379,25 @@ public sealed class SoundService : ISoundService
                     return null;
                 }
 
-                // PROPVARIANT with VT_LPWSTR (0x1F) stores a pointer to a string
-                if (var.vt == 0x1F) // VT_LPWSTR
+                try
                 {
-                    var ptr = Marshal.ReadIntPtr(var.pointerValue);
-                    var name = Marshal.PtrToStringUni(ptr);
-                    Marshal.FreeCoTaskMem(ptr);
-                    return name;
-                }
+                    // PROPVARIANT with VT_LPWSTR (0x1F) stores the string pointer directly
+                    // in the union. Reading it with Marshal.ReadIntPtr would treat the first
+                    // characters of the name as an address and dereference garbage.
+                    if (var.vt == 0x1F) // VT_LPWSTR
+                    {
+                        return Marshal.PtrToStringUni(var.pointerValue);
+                    }
 
-                return null;
+                    return null;
+                }
+                finally
+                {
+                    // The PROPVARIANT owns its string; only PropVariantClear releases it
+                    // correctly (FreeCoTaskMem on the raw pointer would leave a dangling
+                    // reference in the struct).
+                    PropVariantClear(ref var);
+                }
             }
             finally
             {

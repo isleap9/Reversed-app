@@ -16,14 +16,14 @@ public interface IStartupService
     void ToggleRunKeyEntry(StartupEntry entry, bool isEnabled);
 
     /// <summary>
-    /// Queries scheduled tasks that run at startup via WMI.
+    /// Queries scheduled tasks that run at boot or at logon.
     /// </summary>
-    IReadOnlyList<StartupEntry> GetScheduledTasks();
+    Task<IReadOnlyList<StartupEntry>> GetScheduledTasksAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Enables or disables a scheduled task via WMI.
+    /// Enables or disables a scheduled task.
     /// </summary>
-    void ToggleScheduledTask(StartupEntry entry, bool isEnabled);
+    Task ToggleScheduledTaskAsync(StartupEntry entry, bool isEnabled, CancellationToken cancellationToken = default);
 }
 
 /// <summary>

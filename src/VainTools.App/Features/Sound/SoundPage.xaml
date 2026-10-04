@@ -82,7 +82,8 @@
                                 </StackPanel>
                                 <ToggleSwitch Grid.Column="1" MinWidth="0"
                                               OnContent="" OffContent=""
-                                              IsOn="{Binding IsOn, Mode=TwoWay}" />
+                                              IsOn="{Binding IsOn, Mode=TwoWay}"
+                                              Toggled="OnEnhancementToggled" />
                             </Grid>
                         </Border>
                     </DataTemplate>

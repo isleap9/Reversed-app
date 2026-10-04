@@ -10,6 +10,12 @@ namespace VainTools.App.Services;
 /// </summary>
 public sealed partial class AffinityService : IAffinityService
 {
+    /// <summary>System Idle Process.</summary>
+    private const int IdleProcessId = 0;
+
+    /// <summary>The Windows "System" process — affinity cannot be read or changed.</summary>
+    private const int SystemProcessId = 4;
+
     private readonly ILogger<AffinityService> _logger;
 
     public AffinityService(ILogger<AffinityService> logger)
@@ -25,18 +31,31 @@ public sealed partial class AffinityService : IAffinityService
 
         foreach (var process in processes)
         {
+            var id = process.Id;
+
+            // PID 0 (System Idle) and PID 4 (System) have no user-mode affinity
+            // mask — OpenProcess/GetProcessAffinityMask always fail for them.
+            if (id == IdleProcessId || id == SystemProcessId)
+            {
+                continue;
+            }
+
+            string? name = null;
             try
             {
-                var cpuCount = GetAffinityMask(process.Id) is var mask
-                    ? CountBits(mask)
-                    : 0;
-
-                result.Add(new ProcessInfo(process.Id, process.ProcessName, cpuCount));
+                name = process.ProcessName;
+                var cpuCount = CountBits(GetAffinityMask(id));
+                result.Add(new ProcessInfo(id, name, cpuCount));
             }
             catch (Exception ex)
             {
-                _logger.LogDebug(ex, "Failed to get affinity for process {ProcessId} ({ProcessName})",
-                    process.Id, process.ProcessName);
+                // Protected processes reject the name or the affinity query.
+                // Skip them rather than failing the whole enumeration.
+                _logger.LogDebug(ex, "Skipped process {ProcessId} ({ProcessName})", id, name ?? "<unknown>");
+            }
+            finally
+            {
+                process.Dispose();
             }
         }
 
@@ -73,6 +92,22 @@ public sealed partial class AffinityService : IAffinityService
         }
 
         _logger.LogInformation("Set affinity mask for PID {ProcessId} to {Mask:X}", processId, mask);
+    }
+
+    /// <inheritdoc />
+    public ulong GetSystemAffinityMask()
+    {
+        // The system mask is identical for every process, so read it from our own.
+        using var process = Process.GetCurrentProcess();
+
+        if (!GetProcessAffinityMask(process.Handle, out _, out var systemMask))
+        {
+            var error = Marshal.GetLastWin32Error();
+            throw new InvalidOperationException(
+                $"GetProcessAffinityMask failed for the system mask. Win32 error: {error}");
+        }
+
+        return systemMask;
     }
 
     /// <inheritdoc />

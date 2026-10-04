@@ -14,6 +14,7 @@ namespace VainTools.App.ViewModels;
 public partial class StartupViewModel : ViewModelBase
 {
     private readonly IStartupService _startupService;
+    private readonly IRegistryTweakService _registry;
     private readonly IDialogService _dialogs;
     private readonly IInfoBarService _infoBar;
     private readonly ILogger<StartupViewModel> _logger;
@@ -24,6 +25,12 @@ public partial class StartupViewModel : ViewModelBase
     [ObservableProperty]
     public partial bool IsElevated { get; set; }
 
+    [ObservableProperty]
+    public partial bool IsLoading { get; set; }
+
+    [ObservableProperty]
+    public partial string ErrorMessage { get; set; } = string.Empty;
+
     /// <summary>Run key startup entries.</summary>
     public ObservableCollection<StartupEntry> RunKeyEntries { get; } = [];
 
@@ -32,23 +39,28 @@ public partial class StartupViewModel : ViewModelBase
 
     public StartupViewModel(
         IStartupService startupService,
+        IRegistryTweakService registry,
         IDialogService dialogs,
         IInfoBarService infoBar,
         ILogger<StartupViewModel> logger)
     {
         _startupService = startupService;
+        _registry = registry;
         _dialogs = dialogs;
         _infoBar = infoBar;
         _logger = logger;
         Title = "Startup";
-        IsElevated = true; // Startup entries can be read without elevation
+        IsElevated = registry.IsElevated;
     }
 
     [RelayCommand]
-    public void Refresh()
+    public async Task RefreshAsync()
     {
         try
         {
+            IsLoading = true;
+            ErrorMessage = string.Empty;
+
             var runKeyEntries = _startupService.GetRunKeyEntries();
             RunKeyEntries.Clear();
             foreach (var entry in runKeyEntries)
@@ -56,7 +68,7 @@ public partial class StartupViewModel : ViewModelBase
                 RunKeyEntries.Add(entry);
             }
 
-            var scheduledTasks = _startupService.GetScheduledTasks();
+            var scheduledTasks = await _startupService.GetScheduledTasksAsync();
             ScheduledTasks.Clear();
             foreach (var task in scheduledTasks)
             {
@@ -68,45 +80,62 @@ public partial class StartupViewModel : ViewModelBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to load startup entries");
+            ErrorMessage = ex.Message;
             StatusMessage = $"Could not load entries: {ex.Message}";
             _infoBar.ShowError("Load failed", ex.Message);
         }
+        finally
+        {
+            IsLoading = false;
+        }
     }
 
-    [RelayCommand]
-    public void ToggleRunKeyEntry(StartupEntry entry)
+    [RelayCommand(CanExecute = nameof(CanToggleEntry))]
+    public async Task ToggleRunKeyEntryAsync(StartupEntry entry)
     {
         try
         {
             var newState = !entry.IsEnabled;
             _startupService.ToggleRunKeyEntry(entry, newState);
-            StatusMessage = $"{(newState ? "Enabled" : "Disabled")} {entry.Name}";
             _infoBar.ShowSuccess("Entry updated", $"{entry.Name} has been {(newState ? "enabled" : "disabled")}.");
-            Refresh();
+            await RefreshAsync();
+            StatusMessage = $"{(newState ? "Enabled" : "Disabled")} {entry.Name}";
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to toggle Run key entry");
+            ErrorMessage = ex.Message;
             StatusMessage = $"Could not toggle entry: {ex.Message}";
             _infoBar.ShowError("Toggle failed", ex.Message);
         }
     }
 
-    [RelayCommand]
-    public void ToggleScheduledTask(StartupEntry entry)
+    [RelayCommand(CanExecute = nameof(CanToggleEntry))]
+    public async Task ToggleScheduledTaskAsync(StartupEntry entry)
     {
         try
         {
             var newState = !entry.IsEnabled;
-            _startupService.ToggleScheduledTask(entry, newState);
+            await _startupService.ToggleScheduledTaskAsync(entry, newState);
+            _infoBar.ShowSuccess("Task updated", $"{entry.Name} has been {(newState ? "enabled" : "disabled")}.");
+            await RefreshAsync();
             StatusMessage = $"{(newState ? "Enabled" : "Disabled")} {entry.Name}";
-            Refresh();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to toggle scheduled task");
+            ErrorMessage = ex.Message;
             StatusMessage = $"Could not toggle task: {ex.Message}";
             _infoBar.ShowError("Toggle failed", ex.Message);
         }
     }
+
+    /// <summary>
+    /// True when a toggle's new state differs from the model, i.e. the user really flipped it.
+    /// A programmatic binding update produces an equal state and MUST be ignored: acting on it
+    /// makes Refresh → rebind → Toggled → Toggle recurse until the process dies.
+    /// </summary>
+    public static bool IsUserToggle(StartupEntry entry, bool newIsOn) => entry.IsEnabled != newIsOn;
+
+    private static bool CanToggleEntry(StartupEntry? entry) => entry is not null;
 }

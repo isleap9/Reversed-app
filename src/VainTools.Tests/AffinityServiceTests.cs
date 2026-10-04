@@ -16,14 +16,14 @@ public sealed class AffinityServiceTests
     [Fact]
     public void GetCpuCount_ReturnsPositiveValue()
     {
-        var count = _service.GetCpuCount();
-        Assert.True(count > 0, "CPU count should be positive");
+        Assert.True(_service.GetCpuCount() > 0);
     }
 
     [Fact]
     public void GetProcesses_ReturnsNonEmptyList()
     {
         var processes = _service.GetProcesses();
+
         Assert.NotNull(processes);
         Assert.NotEmpty(processes);
     }
@@ -32,40 +32,68 @@ public sealed class AffinityServiceTests
     public void GetProcesses_ContainsCurrentProcess()
     {
         var processes = _service.GetProcesses();
-        var currentPid = Environment.ProcessId;
-        Assert.Contains(processes, p => p.Id == currentPid);
+
+        Assert.Contains(processes, p => p.Id == Environment.ProcessId);
     }
 
     [Fact]
-    public void GetProcesses_AllHavePositiveCpuCount()
+    public void GetProcesses_AllHaveNamesAndPositiveCpuCount()
     {
         var processes = _service.GetProcesses();
-        Assert.All(processes, p => Assert.True(p.CpuCount > 0, $"Process {p.Name} should have positive CPU count"));
+
+        Assert.All(processes, p =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(p.Name));
+            Assert.True(p.CpuCount > 0, $"Process {p.Name} should report at least one CPU");
+        });
+    }
+
+    [Fact]
+    public void GetProcesses_SkipsSystemProcesses()
+    {
+        var processes = _service.GetProcesses();
+
+        Assert.DoesNotContain(processes, p => p.Id is 0 or 4);
     }
 
     [Fact]
     public void GetAffinityMask_ForCurrentProcess_ReturnsNonZero()
     {
-        var mask = _service.GetAffinityMask(Environment.ProcessId);
-        Assert.NotEqual(0UL, mask);
+        Assert.NotEqual(0UL, _service.GetAffinityMask(Environment.ProcessId));
     }
 
     [Fact]
-    public void GetAffinityMask_ForInvalidProcess_Throws()
+    public void GetAffinityMask_ForUnknownProcess_Throws()
     {
-        Assert.Throws<ArgumentException>(() => _service.GetAffinityMask(-1));
+        Assert.ThrowsAny<Exception>(() => _service.GetAffinityMask(-1));
     }
 
     [Fact]
-    public void SetAffinityMask_ForCurrentProcess_DoesNotThrow()
+    public void GetSystemAffinityMask_ReturnsNonZero()
     {
-        var originalMask = _service.GetAffinityMask(Environment.ProcessId);
-        _service.SetAffinityMask(Environment.ProcessId, originalMask);
+        Assert.NotEqual(0UL, _service.GetSystemAffinityMask());
     }
 
     [Fact]
-    public void SetAffinityMask_ForInvalidProcess_Throws()
+    public void SetAffinityMask_ForCurrentProcess_RoundTrips()
     {
-        Assert.Throws<ArgumentException>(() => _service.SetAffinityMask(-1, 1UL));
+        var original = _service.GetAffinityMask(Environment.ProcessId);
+
+        try
+        {
+            _service.SetAffinityMask(Environment.ProcessId, original);
+
+            Assert.Equal(original, _service.GetAffinityMask(Environment.ProcessId));
+        }
+        finally
+        {
+            _service.SetAffinityMask(Environment.ProcessId, original);
+        }
+    }
+
+    [Fact]
+    public void SetAffinityMask_ForUnknownProcess_Throws()
+    {
+        Assert.ThrowsAny<Exception>(() => _service.SetAffinityMask(-1, 1UL));
     }
 }

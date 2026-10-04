@@ -2,14 +2,21 @@
     x:Class="VainTools.App.Features.Affinity.AffinityPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:vm="using:VainTools.App.ViewModels">
+    xmlns:vm="using:VainTools.App.ViewModels"
+    xmlns:services="using:VainTools.App.Services">
 
-    <Grid Padding="24" RowSpacing="16">
+    <!--
+        Row 2 (process list) is Height="*" so the ListView is measured against a
+        bounded height and shows its own scrollbar. An Auto row would measure the
+        list at its full content height (~170 rows), overflow the window and clip
+        the editor with no way to scroll back.
+    -->
+    <Grid x:Name="AffinityRoot" Padding="24" RowSpacing="16">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <!-- Header -->
@@ -38,16 +45,25 @@
                  Title="Administrator rights required"
                  Message="Some settings on this page write to machine-wide keys. Run Vain Tools as administrator to change them." />
 
-        <!-- Process List -->
+        <!-- Process List (bounded: scrolls internally) -->
         <Border Grid.Row="2" Padding="16" CornerRadius="8"
                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                 BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                 BorderThickness="1">
-            <StackPanel>
-                <TextBlock Text="Running Processes" FontWeight="SemiBold" />
-                <ItemsControl ItemsSource="{Binding Processes}" Margin="0,8,0,0">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:ProcessViewModel">
+            <Grid RowSpacing="8">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="Running Processes" FontWeight="SemiBold" />
+                <ListView Grid.Row="1"
+                          Margin="0,8,0,0"
+                          ItemsSource="{Binding Processes}"
+                          SelectionMode="None"
+                          ScrollViewer.VerticalScrollBarVisibility="Auto"
+                          ScrollViewer.VerticalScrollMode="Enabled">
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="services:ProcessInfo">
                             <Grid Padding="8" ColumnSpacing="16">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
@@ -69,64 +85,68 @@
                                         VerticalAlignment="Center" />
                             </Grid>
                         </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </StackPanel>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
         </Border>
 
-        <!-- Affinity Editor -->
+        <!-- Affinity Editor (Auto height, capped so a 32+ CPU grid stays reachable) -->
         <Border Grid.Row="3" Padding="16" CornerRadius="8"
                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
                 BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
                 BorderThickness="1"
-                Visibility="{Binding IsEditorVisible}">
-            <StackPanel>
-                <TextBlock FontWeight="SemiBold">
-                    <Run Text="CPU Affinity — " />
-                    <Run Text="{Binding SelectedProcess.Name}" />
-                </TextBlock>
-                <TextBlock Text="Select which CPUs this process can use."
-                           Margin="0,4,0,0"
-                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                <ItemsControl ItemsSource="{Binding Cpus}" Margin="0,8,0,0">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <ItemsWrapGrid Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:CpuAffinityViewModel">
-                            <Border Margin="0,0,8,8" Padding="12" CornerRadius="6"
-                                    Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
-                                    BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                                    BorderThickness="1">
-                                <Grid ColumnSpacing="12">
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
-                                    <StackPanel Grid.Column="0">
-                                        <TextBlock FontWeight="SemiBold">
-                                            <Run Text="CPU " />
-                                            <Run Text="{Binding Index}" />
-                                        </TextBlock>
-                                        <TextBlock FontSize="11"
-                                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}">
-                                            <Run Text="Core " />
-                                            <Run Text="{Binding CoreIndex}" />
-                                        </TextBlock>
-                                    </StackPanel>
-                                    <CheckBox Grid.Column="1" Content="Enabled"
-                                              IsChecked="{Binding IsEnabled, Mode=TwoWay}"
-                                              VerticalAlignment="Center" />
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-                <Button Content="Apply Settings" Margin="0,8,0,0"
-                        Command="{Binding ApplyAffinityCommand}" />
-            </StackPanel>
+                Visibility="{Binding SelectedProcess, Converter={StaticResource NullToVisibility}}">
+            <ScrollViewer MaxHeight="260"
+                          VerticalScrollBarVisibility="Auto"
+                          VerticalScrollMode="Enabled">
+                <StackPanel>
+                    <TextBlock FontWeight="SemiBold">
+                        <Run Text="CPU Affinity — " />
+                        <Run Text="{Binding SelectedProcess.Name}" />
+                    </TextBlock>
+                    <TextBlock Text="Select which CPUs this process can use."
+                               Margin="0,4,0,0"
+                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <ItemsControl ItemsSource="{Binding Cpus}" Margin="0,8,0,0">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <ItemsWrapGrid Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:CpuAffinityViewModel">
+                                <Border Margin="0,0,8,8" Padding="12" CornerRadius="6"
+                                        Background="{ThemeResource CardBackgroundFillColorSecondaryBrush}"
+                                        BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                                        BorderThickness="1">
+                                    <Grid ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock FontWeight="SemiBold">
+                                                <Run Text="CPU " />
+                                                <Run Text="{Binding Index}" />
+                                            </TextBlock>
+                                            <TextBlock FontSize="11"
+                                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}">
+                                                <Run Text="Core " />
+                                                <Run Text="{Binding CoreIndex}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <CheckBox Grid.Column="1" Content="Enabled"
+                                                  IsChecked="{Binding IsEnabled, Mode=TwoWay}"
+                                                  VerticalAlignment="Center" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Content="Apply Settings" Margin="0,8,0,0"
+                            Command="{Binding ApplyAffinityCommand}" />
+                </StackPanel>
+            </ScrollViewer>
         </Border>
     </Grid>
 </Page>
