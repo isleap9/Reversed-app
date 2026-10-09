@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Text;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -131,15 +132,16 @@ public partial class InstalledAppsViewModel : ViewModelBase
 
         try
         {
-            // D-11 / T-06-02 / T-06-15: explicit confirmation, and the raw command is shown so
-            // the user can see exactly what will be executed. Only the executable token is
-            // split off here — the argument text reaches the uninstaller byte-for-byte, so no
-            // shell metacharacter or %VAR% is ever expanded (see UninstallCommandLine).
+            // D-11 / T-06-02 / T-06-15: explicit confirmation. The dialog names the raw
+            // command, the resolved program, the arguments and the registry key the entry
+            // came from. Only the executable token is split off — the argument text reaches
+            // the uninstaller byte-for-byte, so no shell metacharacter or %VAR% is ever
+            // expanded (see UninstallCommandLine).
             var launch = UninstallCommandLine.Parse(command);
 
             var confirmed = await _dialogs.ConfirmAsync(
                 "Uninstall",
-                $"Are you sure you want to uninstall '{app.DisplayName}'? This will run the program's uninstaller.{Environment.NewLine}{Environment.NewLine}Command:{Environment.NewLine}{command}",
+                BuildUninstallConfirmation(app, command, launch),
                 confirmText: "Uninstall");
 
             if (!confirmed)
@@ -153,16 +155,16 @@ public partial class InstalledAppsViewModel : ViewModelBase
             StatusMessage = $"Uninstalling {app.DisplayName}…";
 
             var exitCode = await RunUninstallAsync(launch);
-            if (exitCode != 0)
-            {
-                throw new InvalidOperationException(
-                    $"The uninstaller for '{app.DisplayName}' exited with code {exitCode}.");
-            }
 
-            // D-13: reload so the list reflects reality after a destructive operation.
+            // D-13: always reload, so the reported state is what the registry says now
+            // rather than what the exit code claimed.
             await RefreshAsync();
-            _infoBar.ShowSuccess("Uninstaller finished", $"The uninstaller for '{app.DisplayName}' has exited.");
-            StatusMessage = $"Uninstalled {app.DisplayName}";
+
+            ReportUninstallOutcome(
+                app,
+                UninstallCommandLine.InterpretExitCode(exitCode),
+                exitCode,
+                IsStillListed(app));
         }
         catch (Exception ex)
         {
@@ -209,6 +211,91 @@ public partial class InstalledAppsViewModel : ViewModelBase
         !string.IsNullOrWhiteSpace(app.QuietUninstallString)
             ? app.QuietUninstallString
             : app.UninstallString;
+
+    /// <summary>
+    /// Builds the confirmation body shown before a registry-sourced command is executed with
+    /// administrator rights (D-11, IN-01, T-06-15). It names the raw command exactly as the
+    /// registry holds it, the program the executable token resolved to, the argument text
+    /// that will be handed over, and the registry key the entry came from — and adds a
+    /// warning for HKEY_CURRENT_USER entries, which any program the user runs can rewrite.
+    /// </summary>
+    public static string BuildUninstallConfirmation(InstalledApp app, string command, UninstallLaunch launch)
+    {
+        var arguments = launch.Arguments.Length == 0 ? "(none)" : launch.Arguments;
+
+        var message = new StringBuilder()
+            .Append($"Are you sure you want to uninstall '{app.DisplayName}'? This will run the program's uninstaller.")
+            .Append(Environment.NewLine)
+            .Append(Environment.NewLine)
+            .AppendLine("Command:")
+            .AppendLine(command)
+            .AppendLine($"Program: {launch.FileName}")
+            .AppendLine($"Arguments: {arguments}")
+            .AppendLine($"Registry key: {app.RegistryPath}")
+            .AppendLine();
+
+        if (app.RegistryPath.StartsWith("HKEY_CURRENT_USER", StringComparison.OrdinalIgnoreCase))
+        {
+            message.Append(
+                "This entry is stored in your user registry, which any program you run can change. Continue only if you recognise the program above.");
+        }
+
+        return message.ToString();
+    }
+
+    /// <summary>
+    /// Turns the uninstaller's exit code and the reloaded list into the message the user is
+    /// shown (WR-06, D-12, D-13). "Program uninstalled" is only claimed when the entry is
+    /// really gone from the reloaded list — many uninstallers exit before they finish, and
+    /// some exit non-zero while having succeeded.
+    /// </summary>
+    private void ReportUninstallOutcome(InstalledApp app, UninstallOutcome outcome, int exitCode, bool stillListed)
+    {
+        var name = app.DisplayName;
+
+        switch (outcome)
+        {
+            case UninstallOutcome.Failed:
+                var failure = $"The uninstaller for '{name}' exited with code {exitCode}.";
+                ErrorMessage = failure;
+                StatusMessage = $"Could not uninstall {name} (exit code {exitCode}).";
+                _infoBar.ShowError("Uninstall failed", failure);
+                break;
+
+            case UninstallOutcome.Cancelled:
+                StatusMessage = $"Uninstall of {name} cancelled.";
+                _infoBar.ShowInfo("Uninstall cancelled", $"The uninstaller for '{name}' was cancelled.");
+                break;
+
+            case UninstallOutcome.SucceededRestartRequired when !stillListed:
+                StatusMessage = $"Uninstalled {name}. Restart required.";
+                _infoBar.ShowWarning(
+                    "Restart required",
+                    $"'{name}' was uninstalled. Restart Windows to finish removing it.");
+                break;
+
+            case UninstallOutcome.Succeeded when !stillListed:
+                StatusMessage = $"Uninstalled {name}";
+                _infoBar.ShowSuccess("Program uninstalled", $"'{name}' was uninstalled.");
+                break;
+
+            default:
+                // Success codes but the entry is still registered: say so instead of claiming
+                // the program is gone (T-06-18).
+                StatusMessage = $"{name} is still listed after its uninstaller exited.";
+                _infoBar.ShowInfo(
+                    "Uninstaller finished",
+                    $"The uninstaller for '{name}' has exited, but '{name}' is still listed. It may still be finishing in another window, or it was not removed. Select Refresh to check again.");
+                break;
+        }
+    }
+
+    /// <summary>
+    /// True when the program is still registered in the reloaded list, matched on the
+    /// registry key the entry came from (never on the display name, which can repeat).
+    /// </summary>
+    private bool IsStillListed(InstalledApp app) =>
+        _allPrograms.Any(p => string.Equals(p.RegistryPath, app.RegistryPath, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// Launches the uninstaller directly via <c>Process.Start</c> (D-05) — deliberately NOT
@@ -264,7 +351,10 @@ public partial class InstalledAppsViewModel : ViewModelBase
         Clipboard.SetContent(package);
     }
 
-    private bool CanUninstall(InstalledApp? app) => app is not null && IsElevated;
+    // WR-07: a second click (or a click on another row) while a load, a confirmation or
+    // another uninstall is in flight would start a concurrent mutation — or open a second
+    // ContentDialog, which WinUI refuses.
+    private bool CanUninstall(InstalledApp? app) => app is not null && IsElevated && !IsLoading;
 
     private static bool CanCopyCommand(InstalledApp? app) =>
         app is not null && !string.IsNullOrWhiteSpace(app.UninstallString);
@@ -303,4 +393,6 @@ public partial class InstalledAppsViewModel : ViewModelBase
     partial void OnSearchQueryChanged(string value) => ApplyFilter();
 
     partial void OnIsElevatedChanged(bool value) => UninstallCommand.NotifyCanExecuteChanged();
+
+    partial void OnIsLoadingChanged(bool value) => UninstallCommand.NotifyCanExecuteChanged();
 }

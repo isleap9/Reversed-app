@@ -272,6 +272,55 @@ public sealed class InstalledAppsViewModelTests
     }
 
     [Fact]
+    public void UninstallCommand_CannotExecute_WhileLoading()
+    {
+        var app = new InstalledApp("App A", "1.0", "Contoso", @"C:\A", "a.exe", string.Empty, "HKCU\\A");
+        _viewModel.IsElevated = true;
+
+        _viewModel.IsLoading = true;
+        Assert.False(_viewModel.UninstallCommand.CanExecute(app));
+
+        _viewModel.IsLoading = false;
+        Assert.True(_viewModel.UninstallCommand.CanExecute(app));
+    }
+
+    [Fact]
+    public void BuildUninstallConfirmation_ShowsProgramArgumentsAndRegistryKey()
+    {
+        var app = new InstalledApp(
+            "App A", "1.0", "Contoso", @"C:\A", "a.exe", string.Empty, @"HKEY_LOCAL_MACHINE\SOFTWARE\Uninstall\A");
+        var launch = new UninstallLaunch(@"C:\Program Files\A\uninstall.exe", "/S");
+
+        var message = InstalledAppsViewModel.BuildUninstallConfirmation(app, "a.exe", launch);
+
+        Assert.Contains("App A", message, StringComparison.Ordinal);
+        Assert.Contains("Command:", message, StringComparison.Ordinal);
+        Assert.Contains("a.exe", message, StringComparison.Ordinal);
+        Assert.Contains("Program: C:\\Program Files\\A\\uninstall.exe", message, StringComparison.Ordinal);
+        Assert.Contains("Arguments: /S", message, StringComparison.Ordinal);
+        Assert.Contains("Registry key: HKEY_LOCAL_MACHINE\\SOFTWARE\\Uninstall\\A", message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BuildUninstallConfirmation_WarnsForCurrentUserEntries()
+    {
+        var currentUser = new InstalledApp(
+            "App A", "1.0", "Contoso", @"C:\A", "a.exe", string.Empty, @"HKEY_CURRENT_USER\SOFTWARE\Uninstall\A");
+        var machine = new InstalledApp(
+            "App B", "1.0", "Contoso", @"C:\B", "b.exe", string.Empty, @"HKEY_LOCAL_MACHINE\SOFTWARE\Uninstall\B");
+        var launch = new UninstallLaunch("a.exe", string.Empty);
+
+        var userMessage = InstalledAppsViewModel.BuildUninstallConfirmation(currentUser, "a.exe", launch);
+        var machineMessage = InstalledAppsViewModel.BuildUninstallConfirmation(machine, "b.exe", launch);
+
+        Assert.Contains("user registry", userMessage, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("user registry", machineMessage, StringComparison.OrdinalIgnoreCase);
+
+        // An empty argument list is stated rather than left blank.
+        Assert.Contains("Arguments: (none)", userMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task SearchQuery_FiltersPrograms()
     {
         _appsServiceMock

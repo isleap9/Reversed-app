@@ -55,7 +55,9 @@ public sealed class InstalledAppsUninstallLaunchTests
         await _viewModel.UninstallCommand.ExecuteAsync(app);
 
         AssertNoError();
-        _infoBarServiceMock.Verify(x => x.ShowSuccess(It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        _infoBarServiceMock.Verify(
+            x => x.ShowSuccess("Program uninstalled", It.IsAny<string>()),
+            Times.Once);
     }
 
     [Fact]
@@ -67,7 +69,9 @@ public sealed class InstalledAppsUninstallLaunchTests
         await _viewModel.UninstallCommand.ExecuteAsync(app);
 
         AssertNoError();
-        _infoBarServiceMock.Verify(x => x.ShowSuccess(It.IsAny<string>(), It.IsAny<string>()), Times.Once);
+        _infoBarServiceMock.Verify(
+            x => x.ShowSuccess("Program uninstalled", It.IsAny<string>()),
+            Times.Once);
     }
 
     [Fact]
@@ -105,6 +109,65 @@ public sealed class InstalledAppsUninstallLaunchTests
         await _viewModel.UninstallCommand.ExecuteAsync(app);
 
         _infoBarServiceMock.Verify(x => x.ShowError("Uninstall failed", It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Uninstall_RestartRequiredExit_WarnsRestart()
+    {
+        var app = Probe("cmd.exe /c exit 3010");
+
+        await _viewModel.UninstallCommand.ExecuteAsync(app);
+
+        _infoBarServiceMock.Verify(
+            x => x.ShowWarning("Restart required", It.Is<string>(m => m.Contains("Restart Windows"))),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Uninstall_CancelledExit_ReportsCancelled()
+    {
+        var app = Probe("cmd.exe /c exit 1602");
+
+        await _viewModel.UninstallCommand.ExecuteAsync(app);
+
+        _infoBarServiceMock.Verify(
+            x => x.ShowInfo("Uninstall cancelled", It.IsAny<string>()),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task Uninstall_EntryStillListed_ReportsStillListed()
+    {
+        var app = Probe("cmd.exe /c exit 0");
+        // The uninstaller exits 0 but the registry entry survives.
+        _appsServiceMock.Setup(x => x.GetInstalledApps()).Returns([app]);
+
+        await _viewModel.UninstallCommand.ExecuteAsync(app);
+
+        _infoBarServiceMock.Verify(
+            x => x.ShowInfo("Uninstaller finished", It.Is<string>(m => m.Contains("still listed"))),
+            Times.Once);
+        _infoBarServiceMock.Verify(x => x.ShowSuccess(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        Assert.Contains("still listed", _viewModel.StatusMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task Uninstall_ConfirmationNamesProgramArgumentsAndRegistryKey()
+    {
+        var app = Probe("cmd.exe /c exit 0");
+
+        await _viewModel.UninstallCommand.ExecuteAsync(app);
+
+        _dialogServiceMock.Verify(
+            x => x.ConfirmAsync(
+                "Uninstall",
+                It.Is<string>(m =>
+                    m.Contains(ProbeRegistryPath, StringComparison.Ordinal)
+                    && m.Contains("Program:", StringComparison.Ordinal)
+                    && m.Contains("Arguments: /c exit 0", StringComparison.Ordinal)),
+                "Uninstall",
+                It.IsAny<string>()),
+            Times.Once);
     }
 
     private static InstalledApp Probe(string uninstallString) => new(

@@ -38,10 +38,10 @@
                  Title="Administrator rights required"
                  Message="Some operations on this page require elevation. Run Vain Tools as administrator to perform them." />
 
-        <!-- Search -->
+        <!-- Search. PropertyChanged: OnSearchQueryChanged filters as the user types (CR-03). -->
         <TextBox Grid.Row="2"
-                 PlaceholderText="Search programs…"
-                 Text="{x:Bind ViewModel.SearchQuery, Mode=TwoWay}" />
+                  PlaceholderText="Search programs…"
+                  Text="{x:Bind ViewModel.SearchQuery, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 
         <!--
             Scrolling content. The list lives in a "*" row: an Auto row would give it
