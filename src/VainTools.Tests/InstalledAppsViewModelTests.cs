@@ -313,16 +313,17 @@ public sealed class InstalledAppsViewModelTests
         public List<string> Launched { get; } = [];
         public List<string> Copied { get; } = [];
         public Exception? LaunchException { get; set; }
+        public int ExitCode { get; set; }
 
-        protected override Task RunUninstallAsync(string command)
+        protected override Task<int> RunUninstallAsync(UninstallLaunch launch)
         {
             if (LaunchException is not null)
             {
                 throw LaunchException;
             }
 
-            Launched.Add(command);
-            return Task.CompletedTask;
+            Launched.Add($"{launch.FileName} {launch.Arguments}".Trim());
+            return Task.FromResult(ExitCode);
         }
 
         protected override void CopyToClipboardCore(string text) => Copied.Add(text);

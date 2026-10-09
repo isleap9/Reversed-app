@@ -131,8 +131,12 @@ public partial class InstalledAppsViewModel : ViewModelBase
 
         try
         {
-            // D-11 / T-06-02 / T-06-03: explicit confirmation, and the raw command is shown so
-            // the user can see exactly what will be executed.
+            // D-11 / T-06-02 / T-06-15: explicit confirmation, and the raw command is shown so
+            // the user can see exactly what will be executed. Only the executable token is
+            // split off here — the argument text reaches the uninstaller byte-for-byte, so no
+            // shell metacharacter or %VAR% is ever expanded (see UninstallCommandLine).
+            var launch = UninstallCommandLine.Parse(command);
+
             var confirmed = await _dialogs.ConfirmAsync(
                 "Uninstall",
                 $"Are you sure you want to uninstall '{app.DisplayName}'? This will run the program's uninstaller.{Environment.NewLine}{Environment.NewLine}Command:{Environment.NewLine}{command}",
@@ -148,12 +152,16 @@ public partial class InstalledAppsViewModel : ViewModelBase
             ErrorMessage = string.Empty;
             StatusMessage = $"Uninstalling {app.DisplayName}…";
 
-            await RunUninstallAsync(command);
-
-            _infoBar.ShowSuccess("Uninstall started", $"The uninstaller for '{app.DisplayName}' has finished.");
+            var exitCode = await RunUninstallAsync(launch);
+            if (exitCode != 0)
+            {
+                throw new InvalidOperationException(
+                    $"The uninstaller for '{app.DisplayName}' exited with code {exitCode}.");
+            }
 
             // D-13: reload so the list reflects reality after a destructive operation.
             await RefreshAsync();
+            _infoBar.ShowSuccess("Uninstaller finished", $"The uninstaller for '{app.DisplayName}' has exited.");
             StatusMessage = $"Uninstalled {app.DisplayName}";
         }
         catch (Exception ex)
@@ -205,16 +213,45 @@ public partial class InstalledAppsViewModel : ViewModelBase
     /// <summary>
     /// Launches the uninstaller directly via <c>Process.Start</c> (D-05) — deliberately NOT
     /// through <c>IProcessRunner</c>, whose redirected-stream setup is for capturing CLI output.
-    /// Overridable for tests so unit tests never launch real uninstallers.
+    ///
+    /// <para>
+    /// The command line is handed over the way Windows itself hands one to a new process:
+    /// <see cref="ProcessStartInfo.FileName"/> holds only the resolved executable and
+    /// <see cref="ProcessStartInfo.Arguments"/> holds the remaining registry text verbatim.
+    /// Shell execution stays off (<see cref="ProcessStartInfo.UseShellExecute"/> is false) and
+    /// no command interpreter is involved, so nothing inside the registry string — not
+    /// <c>&amp;</c>, <c>|</c>, <c>^</c> or <c>%VAR%</c> — is expanded before the uninstaller,
+    /// which inherits administrator rights, reads it (T-06-15).
+    /// </para>
+    ///
+    /// <para>Overridable for tests so unit tests never launch real uninstallers.</para>
     /// </summary>
-    protected virtual async Task RunUninstallAsync(string command)
+    protected virtual async Task<int> RunUninstallAsync(UninstallLaunch launch)
     {
-        var startInfo = new ProcessStartInfo(command) { UseShellExecute = true };
-        using var process = Process.Start(startInfo);
-        if (process is not null)
+        var startInfo = new ProcessStartInfo
         {
-            await process.WaitForExitAsync();
-        }
+            FileName = launch.FileName,
+            // The raw string property, NOT ArgumentList: .NET quotes each ArgumentList element,
+            // and MsiExec / NSIS parse their own raw command line, so re-quoting would change
+            // what the uninstaller receives (CR-01).
+            Arguments = launch.Arguments,
+            UseShellExecute = false,
+            // A GUI uninstaller shows its own window; a console one gets a console.
+            CreateNoWindow = false,
+        };
+
+        using var process = Process.Start(startInfo)
+            ?? throw new InvalidOperationException("The uninstaller could not be started.");
+
+        await process.WaitForExitAsync();
+
+        _logger.LogInformation(
+            "Uninstaller {FileName} {Arguments} exited with {ExitCode}",
+            launch.FileName,
+            launch.Arguments,
+            process.ExitCode);
+
+        return process.ExitCode;
     }
 
     /// <summary>
