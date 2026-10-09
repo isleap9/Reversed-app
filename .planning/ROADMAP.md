@@ -163,14 +163,20 @@ Plans:
 3. Optional Features lists features and can enable/disable them
 4. Store page lists installable apps and can install one
 
-**Plans:** 1/2 plans executed
+**Plans:** 2/6 plans executed
 
 Plans:
 **Wave 1**
 - [x] 06-01: Package service (Appx + uninstall registry + optional features) and three pages
 
 **Wave 2** *(blocked on Wave 1 completion)*
-- [ ] 06-02: Store integration and Store page
+- [x] 06-02: Store integration and Store page
+
+**Gap remediation** *(from 06-VERIFICATION.md gaps_found; 06-03..06-05 in parallel, then 06-06)*
+- [ ] 06-03: Real uninstall launch with exit-code handling and transparent confirmation (INST-02 / CR-01, WR-06, IN-01) plus live Installed Apps search (CR-03)
+- [ ] 06-04: DISM 3010 as success with restart notice, argv feature name, System32 dism.exe, single-button rows (OPT-02 / CR-02, WR-03, IN-02, WR-08)
+- [ ] 06-05: Deprovision provisioned Appx rows via PackageManager, scope-stating confirmation (APPX-02 / WR-01)
+- [ ] 06-06: Store search fixes (CR-03, WR-04, WR-05, WR-09) and Phase 6 tracking bookkeeping
 
 **Cross-cutting constraints:**
 - All ViewModels use partial properties (MVVMTK0045 compliance)
