@@ -7,6 +7,24 @@ namespace VainTools.App.Services;
 public sealed record UninstallLaunch(string FileName, string Arguments);
 
 /// <summary>
+/// What an uninstaller's exit code means for the user.
+/// </summary>
+public enum UninstallOutcome
+{
+    /// <summary>The uninstaller reported success (exit 0).</summary>
+    Succeeded,
+
+    /// <summary>The change landed but Windows must restart to finish it (3010 / 1641).</summary>
+    SucceededRestartRequired,
+
+    /// <summary>The user dismissed the uninstaller (1602, ERROR_INSTALL_USER_EXIT).</summary>
+    Cancelled,
+
+    /// <summary>Anything else: the uninstaller did not complete.</summary>
+    Failed,
+}
+
+/// <summary>
 /// Splits a registry uninstall command line into the executable and its arguments.
 ///
 /// <para>
@@ -27,9 +45,35 @@ public sealed record UninstallLaunch(string FileName, string Arguments);
 /// </summary>
 public static class UninstallCommandLine
 {
+    /// <summary>ERROR_SUCCESS — the uninstaller completed.</summary>
+    public const int ExitSuccess = 0;
+
+    /// <summary>ERROR_SUCCESS_REBOOT_REQUIRED — applied, but Windows must restart.</summary>
+    public const int ExitRestartRequired = 3010;
+
+    /// <summary>ERROR_SUCCESS_REBOOT_INITIATED — applied, and a restart was already started.</summary>
+    public const int ExitRestartInitiated = 1641;
+
+    /// <summary>ERROR_INSTALL_USER_EXIT — the user cancelled the uninstaller.</summary>
+    public const int ExitUserCancelled = 1602;
+
+    /// <summary>
+    /// Maps an uninstaller's exit code to what the user should be told (WR-06). A non-zero
+    /// code is not automatically a failure: 3010 and 1641 mean the change landed and a
+    /// restart finishes it, and 1602 means the user cancelled.
+    /// </summary>
+    public static UninstallOutcome InterpretExitCode(int exitCode) => exitCode switch
+    {
+        ExitSuccess => UninstallOutcome.Succeeded,
+        ExitRestartRequired => UninstallOutcome.SucceededRestartRequired,
+        ExitRestartInitiated => UninstallOutcome.SucceededRestartRequired,
+        ExitUserCancelled => UninstallOutcome.Cancelled,
+        _ => UninstallOutcome.Failed,
+    };
+
     /// <summary>
     /// Splits <paramref name="commandLine"/> using the real file system for existence
-     /// probes and the real system directory for bare-name resolution.
+    /// probes and the real system directory for bare-name resolution.
     /// </summary>
     public static UninstallLaunch Parse(string commandLine)
         => Parse(commandLine, File.Exists, Environment.SystemDirectory);
