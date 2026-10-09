@@ -90,7 +90,7 @@ coverage:
     requirement: "APPX-01"
     verification:
       - kind: unit
-        ref: "src/VainTools.Tests/AppxPackageServiceTests.cs#GetInstalledPackages_ReturnsNotEmpty / GetProvisionedPackages_MarksAllAsProvisioned"
+        ref: "src/VainTools.Tests/AppxPackageServiceTests.cs#GetInstalledPackages_ReturnsList / GetProvisionedPackages_MarksAllAsProvisioned"
         status: pass
     human_judgment: false
   - id: D2

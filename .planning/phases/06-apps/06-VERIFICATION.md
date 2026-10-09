@@ -1,15 +1,23 @@
 ---
 phase: 06-apps
 verified: 2026-10-09T14:47:18Z
-status: gaps_found
-score: 5/6 must-haves verified
+reverified: 2026-10-09T15:05:00Z
+status: human_needed
+score: 6/6 must-haves verified
+re_verification:
+  previous_status: gaps_found
+  previous_score: 5/6
+  gaps_closed:
+    - "06-01-SUMMARY.md cited a non-existent test method name (GetInstalledPackages_ReturnsNotEmpty); corrected to GetInstalledPackages_ReturnsList, which exists at AppxPackageServiceTests.cs:17 and contains Assert.NotEmpty(packages)"
+  gaps_remaining: []
+  regressions: []
 plan_coverage:
   - plan: 06-01
     requirements: [APPX-01, APPX-02, INST-01, INST-02, INST-03, OPT-01, OPT-02]
-    status: gaps_found
+    status: verified
   - plan: 06-02
     requirements: [STOR-01, STOR-02]
-    status: passed
+    status: verified
 requirement_coverage:
   - id: APPX-01
     status: verified
@@ -34,6 +42,10 @@ covered_files:
   - .planning/phases/06-apps/06-01-SUMMARY.md
   - .planning/phases/06-apps/06-02-PLAN.md
   - .planning/phases/06-apps/06-02-SUMMARY.md
+  - .planning/phases/06-apps/06-03-PLAN.md
+  - .planning/phases/06-apps/06-04-PLAN.md
+  - .planning/phases/06-apps/06-05-PLAN.md
+  - .planning/phases/06-apps/06-06-PLAN.md
   - src/VainTools.App/App.xaml.cs
   - src/VainTools.App/Features/Apps/AppxManagerPage.xaml
   - src/VainTools.App/Features/Apps/AppxManagerPage.xaml.cs
@@ -68,28 +80,32 @@ covered_files:
   - src/VainTools.Tests/OptionalFeaturesViewModelTests.cs
   - src/VainTools.Tests/StoreServiceTests.cs
   - src/VainTools.Tests/StoreViewModelTests.cs
-covered_digest: "v3:sha256:8d4690e292082d84c63de4ad60c77bab2118a47a06e2af949b927b592ca8ce42"
-behavior_unverified: 1
+covered_digest: "v3:sha256:3666ad063630a8430eb8ecf95fb473457f8a74235046b0b96e6bfb0506b79cf5"
+behavior_unverified: 5
 human_verification:
   - test: "Navigate to each of Appx Manager, Installed Apps, Optional Features and Store in the running shell and confirm the page renders"
     expected: "Each nav item loads its page, header/subtitle/count text render, list rows show, elevation InfoBar shows when not elevated"
     why_human: "Requires launching the WinUI 3 shell and clicking nav items; headless build/test cannot exercise the visual tree"
-gaps:
-  - truth: "Real WinRT PackageManager enumeration is actually exercised by the committed test code"
-    status: failed
-    reason: "AppxPackageServiceTests assert NotEmpty against the live PackageManager, but every other assertion in the file is shape-only; the summary's claim that tests 'asserted non-empty live results' for FindProvisionedPackages is only partially in the committed code. The tests DO pass (I ran them), so the capability exists, but the specific claim of committed non-empty provisioned coverage is weaker than stated."
-    artifacts:
-      - path: src/VainTools.Tests/AppxPackageServiceTests.cs
-        issue: "Committed coverage is NotEmpty for both installed and provisioned; not the fuller live-probe coverage the SUMMARY narrative implies"
-    missing:
-      - "Strengthen assertions if the stronger claim is to be relied upon"
+  - test: "On an elevated run, disable a disposable optional feature and re-enable it"
+    expected: "Confirmation dialog appears before disable; list reloads with the new state; raw DISM state string remains visible in the 12pt detail line"
+    why_human: "A real system mutation; tests mock IProcessRunner"
+  - test: "On an elevated run, search for a small app and install it"
+    expected: "Confirmation dialog names the app and its package id; winget install --id ... --exact runs; success InfoBar or winget's own error text appears"
+    why_human: "Installing software is a real system mutation; tests mock IProcessRunner"
+  - test: "On an elevated run, remove a throwaway program's entry via Uninstall, and separately use Copy Command and paste into a text box"
+    expected: "Confirmation shows the raw command; the process launches and the list reloads; clipboard contains the raw UninstallString verbatim (not the quiet variant)"
+    why_human: "Requires a real uninstaller and a real clipboard"
+  - test: "On an elevated run, remove a disposable package"
+    expected: "PackageManager.RemovePackageAsync runs; on failure the WinRT error text surfaces through the InfoBar; on success the list reloads"
+    why_human: "IsElevated is injected via IRegistryTweakService in every test, so the elevated branch is verified as logic only"
 ---
 
 # Phase 6: Apps Verification Report
 
 **Phase Goal:** Implement app and package management across the four Apps sub-pages.
 **Verified:** 2026-10-09T14:47:18Z
-**Status:** gaps_found
+**Re-verified:** 2026-10-09T15:05:00Z — after remediation of the single recorded gap
+**Status:** human_needed
 
 ## Verification Method
 
@@ -153,9 +169,9 @@ winget search parsing across multiple queries.
 | 3 | Optional Features lists features and can enable/disable them | ✓ VERIFIED | `OptionalFeaturesService` runs `dism.exe /Online /Get-Features /Format:List` and `/Enable-Feature` / `/Disable-Feature`; enable is elevation-gated, disable is elevation-gated **and** confirmed; both reload. Live: 134 features. |
 | 4 | Store page lists installable apps and can install one | ✓ VERIFIED | `StoreService.SearchApps`/`InstallAppAsync` via `IProcessRunner` argument vector; `StoreViewModel` gates install on elevation + a confirmation that names app **and** id, installs by id with `--exact`. Live: 295 and 35 rows parsed. |
 | 5 | Every destructive path is elevation-gated and confirmed; lists reload after success | ✓ VERIFIED | Read each of the four ViewModels: remove / uninstall / disable all check `IsElevated` first and call `IDialogService.ConfirmAsync`; all four call `await RefreshAsync()` on success (D-13). Enable is elevation-gated with no confirmation (additive, per plan). |
-| 6 | The three "never verified" items claimed unverified in the summaries are genuinely proven or correctly deferred | ⚠️ PARTIAL | Live enumeration for Appx/Installed Apps/Optional Features and live winget search **are** proven (app log above). Live DISM enable/disable and live winget install were **never executed** — correctly flagged as human judgment. Runtime navigation of the four pages was never observed — correctly flagged. See gap below and Human Verification. |
+| 6 | The three "never verified" items claimed unverified in the summaries are genuinely proven or correctly deferred | ✓ VERIFIED | Live enumeration for Appx/Installed Apps/Optional Features and live winget search **are** proven (app log above, plus committed `Assert.NotEmpty` assertions that I ran). Live DISM enable/disable and live winget install were **never executed** — correctly flagged as human judgment. Runtime navigation of the four pages was never observed — correctly flagged. The 06-01 SUMMARY coverage citation that named a non-existent test has been corrected (see Remediation below). |
 
-**Score:** 5/6 must-haves verified (1 present-but-behavior-unverified → human verification)
+**Score:** 6/6 must-haves verified (5 behaviors present in code but not exercised live → human verification)
 
 ## Threat Model Mitigations (T-06-01 … T-06-14)
 
@@ -209,23 +225,57 @@ table still lists Phase 6 as "Pending" — bookkeeping only, no code impact.
 | Tests are real | ✓ | 377 passing, measured above; registry tests self-clean; no `Assert.True(true)` stubs; DISM/winget mocked at `IProcessRunner`, WinRT exercised live. |
 | DISM via P/Invoke (D-06) | ⚠️ deviation, plan-permitted | Plan explicitly allows the `dism.exe` fallback; taken and documented in the service header. Rationale (struct-layout safety, testability seam) is sound and matches the `StartupService` `schtasks.exe` precedent. |
 
-## Gaps
+## Remediation Self-Check (re-verification)
 
-Only one gap, and it is a **claim-accuracy** gap rather than a capability gap:
+**What was wrong.** The initial verification recorded one gap: the 06-01 SUMMARY's
+coverage entry for requirement APPX-01 cited
+`AppxPackageServiceTests.cs#GetInstalledPackages_ReturnsNotEmpty`, a method that does not
+exist in the file. The report also flagged that the underlying claim — "committed tests
+assert non-empty live WinRT results" — was thinner than the SUMMARY narrative implied.
 
-** Gap 1 — the "non-empty live WinRT" claim is thinner than the SUMMARY implies.**
-`AppxPackageServiceTests` does assert `NotEmpty` for both installed and provisioned
-packages, and those tests pass on this machine, so the capability is real and exercised.
-But the committed assertions are shape-only for everything else, and the 06-01 SUMMARY's
-coverage entry cites `GetInstalledPackages_ReturnsNotEmpty / GetProvisionedPackages_MarksAllAsProvisioned`
-— the first of those two method names does not exist in the file (the actual test is
-`GetInstalledPackages_ReturnsList`). The cited reference is inaccurate.
-**Impact:** low — no user-facing behavior is affected; the tests do cover enumeration.
-**Fix:** correct the coverage reference, and optionally strengthen the installed-package
-assertion beyond `NotEmpty`.
+**What changed.** Exactly one line in `.planning/phases/06-apps/06-01-SUMMARY.md`:
 
-No code was missing, stubbed, or unwired. No anti-pattern blockers: the only `TBD/FIXME/XXX`
-hits in the 34 changed files are the two legitimate `PlaceholderText="Search …"` attributes.
+```diff
+-        ref: "src/VainTools.Tests/AppxPackageServiceTests.cs#GetInstalledPackages_ReturnsNotEmpty / GetProvisionedPackages_MarksAllAsProvisioned"
++        ref: "src/VainTools.Tests/AppxPackageServiceTests.cs#GetInstalledPackages_ReturnsList / GetProvisionedPackages_MarksAllAsProvisioned"
+```
+
+**Confirmed against the code.** Both cited methods now exist:
+`GetInstalledPackages_ReturnsList` at `AppxPackageServiceTests.cs:17` and
+`GetProvisionedPackages_MarksAllAsProvisioned` at line 57. The first contains
+`Assert.NotNull(packages); Assert.NotEmpty(packages);` against the real
+`PackageManager` — so the citation is accurate and the live-enumeration claim it supports
+is genuinely backed by committed, passing test code.
+
+**Scope of the change.** Planning artifact only. `git diff` on the summary shows a single
+line; `git status --porcelain -- src/` shows **no source file modified** (the only `src/`
+entries are the two binary assets `Assets/AkariLogo.ico` / `.png`, last touched by
+`3b33884`, which predate this phase). No code, XAML, test or project file changed.
+
+**Regression check.** `dotnet test --no-build` re-run after the remediation:
+**Passed! — Failed: 0, Passed: 377, Skipped: 0, Total: 377** — unchanged.
+
+**Re-assessment.** With the citation corrected and verified accurate, the only gap I
+recorded is closed. No new gap was found: re-reading the affected code and the corrected
+summary line shows no further discrepancy. `gaps:` is therefore empty and `gaps_remaining: []`.
+
+**Why the status is `human_needed` rather than `passed`.** Five observable behaviors are
+present and wired in code but no test exercises their live path: runtime navigation and
+rendering of the four pages, live DISM enable/disable, live winget install, live
+uninstall/copy-command, and the elevated branch of the Appx remove path. These are not
+code defects and are not counted against the goal — they are recorded as human judgment
+below, and under the ordered status decision tree any human-verification item makes
+`passed` invalid.
+
+**Note on the covered set.** The regenerated fingerprint now includes
+`06-03-PLAN.md` … `06-06-PLAN.md`. These are new, still-untracked gap-remediation plans
+created *after* the initial verification (commit `097091c docs(06): create gap closure
+plans 06-03..06-06`). Their target files do not yet exist
+(`UninstallCommandLine.cs`, `InstalledAppsUninstallLaunchTests.cs`,
+`UninstallCommandLineTests.cs`, `ProcessRunnerTests.cs` all return `False`), and no source
+file has changed — so they are unexecuted planning artifacts and do not alter the
+verification of the code as it stands. They are included because the fingerprint command
+adds the phase's own PLAN/SUMMARY files automatically; the digest was copied verbatim.
 
 ## Human Verification Required
 
@@ -277,11 +327,22 @@ elevated branch is verified as logic only.
 
 Phase 6 delivers its goal. All four Apps sub-pages exist with real service, ViewModel,
 custom XAML and DI wiring; every destructive path is elevation-gated, confirmed and reloaded;
-the threat model is implemented; the build is clean (0/0) and 377 tests pass. The remaining
-items are runtime/visual and mutation-level checks that no headless run can cover, plus one
-inaccurate coverage reference in the 06-01 SUMMARY.
+the threat model (T-06-01 … T-06-14) is implemented; the build is clean (0 warnings / 0
+errors) and all 377 tests pass (baseline 265). Every REQUIREMENTS.md ID for the phase is
+accounted for with code evidence.
+
+The initial verification recorded one gap — an inaccurate test-method citation in
+`06-01-SUMMARY.md` — which has been remediated and re-verified against the code; no source
+changed and the suite is unchanged at 377 passing.
+
+What remains is runtime and mutation-level verification that no headless run can perform.
+Five items are listed under Human Verification Required above: runtime navigation and
+rendering of the four pages, live DISM enable/disable, live winget install, live
+uninstall/copy-command, and the elevated branch of the Appx remove path. These are human
+judgment items, not defects, and `status: human_needed` reflects exactly that.
 
 ---
 
 _Verified: 2026-10-09T14:47:18Z_
+_Re-verified: 2026-10-09T15:05:00Z (citation gap remediated; status gaps_found → human_needed)_
 _Verifier: the agent (gsd-verifier)_
