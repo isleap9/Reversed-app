@@ -16,6 +16,7 @@ Implement four app/package management pages: Appx Manager (enumerate/remove prov
 ### Appx Manager — Package Enumeration & Removal
 - **D-01:** Use the WinRT `Windows.Management.Deployment.PackageManager` API directly in C# — this is the native API the real `Vain Toolbox.exe` uses (it is native C++/WinRT). The faithful equivalent in C# is the same WinRT API. — **Reversibility:** reversible — service interface can be swapped later
 - **D-02:** Appx Manager lists both installed and provisioned packages. Removal via `PackageManager.RemovePackageAsync`. The real app enumerates/removes provisioned packages.
+  - **D-02 amendment (2026-10-09, user-approved during gap-closure planning):** Installed rows keep `RemovePackageAsync` (per-user). Provisioned rows are removed with `PackageManager.DeprovisionPackageForAllUsersAsync`, because per-user removal cannot remove a provisioned package (APPX-02). Deprovisioning is system-wide and also affects new user accounts, so the confirmation dialog must state the all-users effect. Implemented by 06-05.
 
 ### Installed Apps — Registry Enumeration & Uninstall Execution
 - **D-03:** Use direct registry reads (`Microsoft.Win32.Registry`) on `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall`, `HKLM\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall`, and `HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall` — matches the real native app exactly.
