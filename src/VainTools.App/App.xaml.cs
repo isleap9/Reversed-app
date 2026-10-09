@@ -118,6 +118,7 @@ public partial class App : Application
         builder.Services.AddSingleton<IAppxPackageService, AppxPackageService>();
         builder.Services.AddSingleton<IInstalledAppsService, InstalledAppsService>();
         builder.Services.AddSingleton<IOptionalFeaturesService, OptionalFeaturesService>();
+        builder.Services.AddSingleton<IStoreService, StoreService>();
 
         // View models
         builder.Services.AddTransient<HomeViewModel>();
