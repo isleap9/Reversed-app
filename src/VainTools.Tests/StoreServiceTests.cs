@@ -101,6 +101,37 @@ public sealed class StoreServiceTests
     }
 
     [Fact]
+    public void SearchApps_TreatsRealNoResultsExitAsAnEmptyResult()
+    {
+        // Verified against winget v1.29.380 on this machine: a query that matches
+        // nothing exits -1978335212 and prints "No package found matching input
+        // criteria." on STDOUT. That is a successful search with nothing to show, so the
+        // service must return an empty list, not surface an error.
+        SetupWinget(new ProcessResult(
+            -1978335212, "No package found matching input criteria.", string.Empty));
+
+        Assert.Empty(_service.SearchApps("snipping tools"));
+    }
+
+    [Fact]
+    public void SearchApps_KeepsAMultiWordQueryInOneArgument()
+    {
+        // The app is the proof that a multi-word query must stay ONE argv element:
+        // splitting "snipping tools" into two makes winget fail outright with
+        // "Found a positional argument when none was expected: 'tools'" (exit
+        // -1978335230), which is a different failure from "no package found".
+        SetupWinget(new ProcessResult(0, RealSingleRowOutput, string.Empty));
+
+        _service.SearchApps("snipping tools");
+
+        _processRunnerMock.Verify(
+            x => x.RunAsync(
+                "winget",
+                It.Is<string[]>(a => a.SequenceEqual(new[] { "search", "snipping tools", "--accept-source-agreements" }))),
+            Times.Once);
+    }
+
+    [Fact]
     public void SearchApps_ReturnsEmptyListForBlankQuery()
     {
         Assert.Empty(_service.SearchApps("   "));

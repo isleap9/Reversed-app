@@ -16,6 +16,14 @@ namespace VainTools.App.Services;
 ///    unparseable rows or an empty result all return an empty list and log a warning,
 ///    so the page shows its own user-facing copy instead of a raw CLI error (D-12 /
 ///    T-06-14). Process-layer exceptions are not caught.
+///
+///    winget exits nonzero for an ordinary "no results" too: the real CLI returned exit
+///    <c>-1978335212</c> with <c>No package found matching input criteria.</c> on stdout,
+///    verified against v1.29.380 on this machine. That is a successful search with
+///    nothing to show, so it is deliberately treated exactly like an empty result — an
+///    empty list, a warning in the log, and the page's empty state. The UI-SPEC error
+///    state is reached through the exception path instead, which is what a missing
+///    <c>winget.exe</c> produces.
 ///  * <b>Install returns the raw result.</b> <see cref="InstallAppAsync"/> hands back
 ///    the <see cref="ProcessResult"/> — including exit code and stderr — and lets the
 ///    caller decide what a failure means for the user.
