@@ -52,7 +52,9 @@ See `.planning/REQUIREMENTS.md` for the full REQ-ID list. Summary:
 ## Context
 
 **Ground truth** was recovered by static analysis of the shipped binaries and is
-recorded in `.planning/research/VAIN-TOOLBOX-GROUND-TRUTH.md`. Key findings:
+recorded in `.planning/research/VAIN-TOOLBOX-GROUND-TRUTH.md`. The binaries now live
+in `Vain/` at the repo root (`Vain/Vain Toolbox.exe`) for re-analysis; they are
+reference material only (`*.exe` is gitignored). Key findings:
 
 - `Vain Toolbox.exe` is **native C++/WinRT** (no CLR data directory, no `BSJB`/`mscorlib`
   strings, 725 `Microsoft.UI.Xaml` references, C++ mangled `vaintoolboxc__` names).

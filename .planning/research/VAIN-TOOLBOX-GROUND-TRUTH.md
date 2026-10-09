@@ -6,15 +6,18 @@
 
 ## Binary inventory
 
-`C:\Users\isleap\Desktop\Vain\Executables\Files\Program Files\vain\`
+**Current location:** `C:\Users\isleap\Documents\GitHub\Reversed-app\Vain\`
+(originally recovered from the shipped installer layout
+`C:\Users\isleap\Desktop\Vain\Executables\Files\Program Files\vain\`;
+the binaries are local reference material only — `*.exe` is gitignored)
 
 | File | Size | Role |
 |---|---|---|
-| `Vain Toolbox.exe` | 12.0 MB | Main app — **native C++/WinRT WinUI 3, NOT .NET** |
+| `Vain Toolbox.exe` | 11.7 MB | Main app — **native C++/WinRT WinUI 3, NOT .NET** |
 | `Vain Tools.exe` | 483 KB | Tray/background helper (registry + named-event driven) |
 | `Vain Governor UI.exe` | 2.1 MB | Separate governor window app (`ThreadWindow.xaml`) |
 | `VainShell.dll` | 70 KB | Shell integration |
-| `Vain Toolbox.pri` | 1.5 MB | Resource index — every UI string, all languages |
+| `Vain Toolbox.pri` | 1.4 MB | Resource index — every UI string, all languages |
 
 Evidence it is native, not managed: no CLR data directory, zero occurrences of
 `BSJB` / `mscorlib` / `.NETCoreApp` / `System.Runtime`. 725 hits for

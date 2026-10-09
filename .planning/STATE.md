@@ -250,11 +250,11 @@ overwriting files only partially read — delete and rewrite, or use `patch`.
 
 ## Session Continuity
 
-**Last session:** 2026-10-04T02:33:48.817Z
-**Stopped at:** Phase 6 UI-SPEC approved
-**Resume file:** .planning/phases/06-apps/06-UI-SPEC.md
+**Last session:** 2026-10-09T00:00:00.000Z
+**Stopped at:** Session resumed, proceeding to execute Phase 6 (06-01)
+**Resume file:** .planning/phases/06-apps/06-01-PLAN.md
 
-Resume with: `/gsd-discuss-phase 6` or `/gsd-plan-phase 6`
+Resume with: `/gsd-execute-phase 6` or `/gsd-plan-phase 6`
 **Resumed:** 2026-10-04 — session resumed, proceeding to close Phase 5 gaps (05-04 remediation)
 **Completed:** 2026-10-04 — 05-04 executed, verification PASS, tracking updated
 
