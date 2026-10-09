@@ -15,12 +15,12 @@ namespace VainTools.App.ViewModels;
 /// uninstall (direct <c>Process.Start</c>, D-05) and copy-command (raw string, D-04).
 ///
 /// Uninstall is gated on elevation (T-06-03, D-10) and an explicit confirmation dialog
-/// that shows the raw command (T-06-02, D-11).
+/// that shows the raw command, the resolved program, the arguments and the registry key
+/// the entry came from (T-06-02, T-06-15, D-11).
 /// </summary>
 public partial class InstalledAppsViewModel : ViewModelBase
 {
     private readonly IInstalledAppsService _appsService;
-    private readonly IRegistryTweakService _registry;
     private readonly IDialogService _dialogs;
     private readonly IInfoBarService _infoBar;
     private readonly ILogger<InstalledAppsViewModel> _logger;
@@ -61,7 +61,6 @@ public partial class InstalledAppsViewModel : ViewModelBase
         ILogger<InstalledAppsViewModel> logger)
     {
         _appsService = appsService;
-        _registry = registry;
         _dialogs = dialogs;
         _infoBar = infoBar;
         _logger = logger;
