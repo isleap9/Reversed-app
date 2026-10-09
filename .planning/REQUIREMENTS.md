@@ -118,13 +118,13 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Apps
 
-- [ ] **APPX-01**: User can list installed Appx/provisioned packages
-- [ ] **APPX-02**: User can remove a provisioned package
-- [ ] **INST-01**: User can list installed programs from the uninstall registry
-- [ ] **INST-02**: User can uninstall a program (quiet or normal)
-- [ ] **INST-03**: User can copy a program's uninstall command
-- [ ] **OPT-01**: User can list Windows optional features
-- [ ] **OPT-02**: User can enable/disable an optional feature
+- [x] **APPX-01**: User can list installed Appx/provisioned packages
+- [x] **APPX-02**: User can remove a provisioned package
+- [x] **INST-01**: User can list installed programs from the uninstall registry
+- [x] **INST-02**: User can uninstall a program (quiet or normal)
+- [x] **INST-03**: User can copy a program's uninstall command
+- [x] **OPT-01**: User can list Windows optional features
+- [x] **OPT-02**: User can enable/disable an optional feature
 - [ ] **STOR-01**: Store page lists installable apps
 - [ ] **STOR-02**: User can install an app from the Store page
 

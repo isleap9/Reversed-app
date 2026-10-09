@@ -163,11 +163,11 @@ Plans:
 3. Optional Features lists features and can enable/disable them
 4. Store page lists installable apps and can install one
 
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 **Wave 1**
-- [ ] 06-01: Package service (Appx + uninstall registry + optional features) and three pages
+- [x] 06-01: Package service (Appx + uninstall registry + optional features) and three pages
 
 **Wave 2** *(blocked on Wave 1 completion)*
 - [ ] 06-02: Store integration and Store page
@@ -281,7 +281,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 3. General & System | 3/3 | Complete | 2026-10-03 |
 | 4. Security, Performance & Power | 3/3 | Complete    | 2026-10-03 |
 | 5. Network, Sound, Affinity & Startup | 4/4 | Complete | 2026-10-04 |
-| 6. Apps | 0/2 | Pending | - |
+| 6. Apps | 1/2 | Pending | - |
 | 7. Tools | 0/3 | Pending | - |
 | 8. NVIDIA DRS Editor | 0/3 | Pending | - |
 | 9. Display / EDID Editor | 0/3 | Pending | - |
