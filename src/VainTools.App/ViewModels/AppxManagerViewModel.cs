@@ -68,7 +68,7 @@ public partial class AppxManagerViewModel : ViewModelBase
                 var installed = _appxService.GetInstalledPackages();
                 var provisioned = _appxService.GetProvisionedPackages();
                 return installed.Concat(provisioned).ToList();
-            });
+            }).ConfigureAwait(false);
 
             Packages.Clear();
             foreach (var package in packages)
@@ -125,7 +125,7 @@ public partial class AppxManagerViewModel : ViewModelBase
             ErrorMessage = string.Empty;
             StatusMessage = $"Removing {package.Name}…";
 
-            var result = await _appxService.RemovePackageAsync(package.FullName);
+            var result = await _appxService.RemovePackageAsync(package.FullName).ConfigureAwait(false);
             if (!result.Success)
             {
                 throw new InvalidOperationException(
@@ -133,7 +133,7 @@ public partial class AppxManagerViewModel : ViewModelBase
             }
 
             _infoBar.ShowSuccess("Package removed", $"'{package.Name}' has been removed.");
-            await RefreshAsync();
+            await RefreshAsync().ConfigureAwait(false);
             StatusMessage = $"Removed {package.Name}";
         }
         catch (Exception ex)
