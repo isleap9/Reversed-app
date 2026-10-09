@@ -116,7 +116,6 @@ public partial class App : Application
         builder.Services.AddSingleton<IAffinityService, AffinityService>();
         builder.Services.AddSingleton<IStartupService, StartupService>();
         builder.Services.AddSingleton<IAppxPackageService, AppxPackageService>();
-        builder.Services.AddSingleton<IInstalledAppsService, InstalledAppsService>();
 
         // View models
         builder.Services.AddTransient<HomeViewModel>();
@@ -130,7 +129,6 @@ public partial class App : Application
         builder.Services.AddTransient<AffinityViewModel>();
         builder.Services.AddTransient<StartupViewModel>();
         builder.Services.AddTransient<AppxManagerViewModel>();
-        builder.Services.AddTransient<InstalledAppsViewModel>();
 
         // Navigation: pages are created through the DI container.
         builder.Services.AddSingleton<INavigationService>(sp =>
