@@ -2,38 +2,102 @@
     x:Class="VainTools.App.Features.Apps.OptionalFeaturesPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-    xmlns:local="using:VainTools.App.Features.Apps"
-    mc:Ignorable="d">
+    xmlns:services="using:VainTools.App.Services">
 
-    <Grid Padding="24">
+    <Grid x:Name="OptionalFeaturesRoot" Padding="24" RowSpacing="16">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0"
-                   Text="Optional Features"
-                   Style="{StaticResource TitleTextBlockStyle}"/>
+        <!-- Header -->
+        <Grid Grid.Row="0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Grid.Column="0">
+                <TextBlock Text="Optional Features" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Text="Windows optional features enable/disable."
+                           Margin="0,4,0,0"
+                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+            </StackPanel>
+            <Button Grid.Column="1" Content="Refresh"
+                    Command="{Binding RefreshCommand}"
+                    VerticalAlignment="Top" />
+        </Grid>
 
-        <TextBlock Grid.Row="1"
-                   Margin="0,8,0,0"
-                   TextWrapping="Wrap"
-                   Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                   Text="Windows optional feature enable/disable."/>
+        <!-- Elevation InfoBar -->
+        <InfoBar x:Name="ElevationBar"
+                 Grid.Row="1"
+                 IsOpen="{Binding IsElevated, Converter={StaticResource InvertedBooleanConverter}}"
+                 IsClosable="False"
+                 Severity="Warning"
+                 Title="Administrator rights required"
+                 Message="Some operations on this page require elevation. Run Vain Tools as administrator to perform them." />
 
-        <Border Grid.Row="2"
-                Margin="0,16,0,0"
-                Padding="16"
-                CornerRadius="8"
-                VerticalAlignment="Top"
-                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
-                BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
-                BorderThickness="1">
-            <TextBlock Text="Not implemented yet."
-                       Foreground="{ThemeResource TextFillColorTertiaryBrush}"/>
-        </Border>
+        <!-- Scrolling content -->
+        <ScrollViewer Grid.Row="2"
+                      VerticalScrollBarVisibility="Auto"
+                      VerticalScrollMode="Enabled">
+            <StackPanel Spacing="16">
+
+                <!-- Feature List -->
+                <Border Padding="16" CornerRadius="8"
+                        Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                        BorderBrush="{ThemeResource DividerStrokeColorDefaultBrush}"
+                        BorderThickness="1">
+                    <StackPanel>
+                        <TextBlock Text="Windows Optional Features" FontWeight="SemiBold" />
+                        <TextBlock Margin="0,4,0,0" FontSize="12"
+                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}">
+                            <Run Text="{Binding Features.Count}" /><Run Text=" features" />
+                        </TextBlock>
+                        <TextBlock Text="No optional features found. No Windows optional features were found on this system."
+                                   Margin="0,8,0,0"
+                                   TextWrapping="Wrap"
+                                   Foreground="{ThemeResource TextFillColorTertiaryBrush}"
+                                   Visibility="{Binding HasFeatures, Converter={StaticResource InverseBoolToVisibility}}" />
+                        <ItemsControl ItemsSource="{Binding Features}" Margin="0,8,0,0">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="services:OptionalFeature">
+                                    <Grid Padding="8" ColumnSpacing="16">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel Grid.Column="0">
+                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{Binding State}"
+                                                       FontSize="11"
+                                                       Foreground="{ThemeResource TextFillColorTertiaryBrush}" />
+                                        </StackPanel>
+                                        <Button Grid.Column="1" Content="Enable"
+                                                Command="{Binding DataContext.EnableFeatureCommand, ElementName=OptionalFeaturesRoot}"
+                                                CommandParameter="{Binding}"
+                                                VerticalAlignment="Center" />
+                                        <Button Grid.Column="2" Content="Disable"
+                                                Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                                                Command="{Binding DataContext.DisableFeatureCommand, ElementName=OptionalFeaturesRoot}"
+                                                CommandParameter="{Binding}"
+                                                VerticalAlignment="Center" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Loading -->
+        <ProgressRing Grid.Row="3" Width="32" Height="32"
+                      HorizontalAlignment="Center"
+                      IsActive="{Binding IsLoading}"
+                      Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}" />
     </Grid>
 </Page>
