@@ -115,6 +115,7 @@ public partial class App : Application
         builder.Services.AddSingleton<ISoundService, SoundService>();
         builder.Services.AddSingleton<IAffinityService, AffinityService>();
         builder.Services.AddSingleton<IStartupService, StartupService>();
+        builder.Services.AddSingleton<IAppxPackageService, AppxPackageService>();
 
         // View models
         builder.Services.AddTransient<HomeViewModel>();
@@ -127,6 +128,7 @@ public partial class App : Application
         builder.Services.AddTransient<SoundPageViewModel>();
         builder.Services.AddTransient<AffinityViewModel>();
         builder.Services.AddTransient<StartupViewModel>();
+        builder.Services.AddTransient<AppxManagerViewModel>();
 
         // Navigation: pages are created through the DI container.
         builder.Services.AddSingleton<INavigationService>(sp =>
