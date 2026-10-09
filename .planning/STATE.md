@@ -3,7 +3,7 @@ gsd_state_version: "1.0"
 milestone: v2.0
 current_plan: 2
 status: verifying
-stopped_at: Completed 06-01 (Appx/Installed Apps/Optional Features) — Wave 1
+stopped_at: Phase 6 verification gaps_found — plan gap closure
 last_updated: "2026-10-09T12:56:54.357Z"
 state_head: 525f4415899d4c93e8ec4efa6d3fc7dd015db030
 progress:
@@ -254,8 +254,8 @@ overwriting files only partially read — delete and rewrite, or use `patch`.
 ## Session Continuity
 
 **Last session:** 2026-10-09T12:56:54.114Z
-**Stopped at:** Completed 06-01 (Appx/Installed Apps/Optional Features) — Wave 1
-**Resume file:** .planning/phases/06-apps/06-02-PLAN.md
+**Stopped at:** Phase 6 verified 2026-10-09 — UAT 15/15, security 0 open, verification gaps_found (INST-02 uninstall broken, OPT-02 DISM 3010). Next: /gsd-plan-phase 06 --gaps
+**Resume file:** None
 
 Resume with: `/gsd-execute-phase 6` or `/gsd-plan-phase 6`
 **Resumed:** 2026-10-04 — session resumed, proceeding to close Phase 5 gaps (05-04 remediation)
