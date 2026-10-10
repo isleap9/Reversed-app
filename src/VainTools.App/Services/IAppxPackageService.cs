@@ -12,9 +12,17 @@ public interface IAppxPackageService
     IReadOnlyList<AppxPackage> GetProvisionedPackages();
 
     /// <summary>
-    /// Removes a package by full name. Requires elevation. Irreversible: the caller must confirm first.
+    /// Removes a package by full name for the current user. Requires elevation.
+    /// Irreversible: the caller must confirm first.
     /// </summary>
     Task<DeploymentResult> RemovePackageAsync(string packageFullName);
+
+    /// <summary>
+    /// Deprovisions a package family for all users, so new accounts no longer
+    /// receive the package. Requires elevation. Does not remove copies already
+    /// installed for existing users. The caller must confirm first (D-11).
+    /// </summary>
+    Task<DeploymentResult> DeprovisionPackageAsync(string packageFamilyName);
 }
 
 /// <summary>

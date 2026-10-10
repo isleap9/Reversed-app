@@ -227,4 +227,134 @@ public sealed class AppxManagerViewModelTests
 
         Assert.False(_viewModel.RemovePackageCommand.CanExecute(null));
     }
+
+    [Fact]
+    public async Task RemovePackageAsync_ProvisionedRow_DeprovisionsByFamilyName()
+    {
+        _viewModel.IsElevated = true;
+        _dialogServiceMock
+            .Setup(x => x.ConfirmAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+        _appxServiceMock
+            .Setup(x => x.DeprovisionPackageAsync(It.IsAny<string>()))
+            .ReturnsAsync(new DeploymentResult(true, null));
+        _appxServiceMock.Setup(x => x.GetInstalledPackages()).Returns([]);
+        _appxServiceMock.Setup(x => x.GetProvisionedPackages()).Returns([]);
+        var package = new AppxPackage("Full.A_1.0", "A", "Pub", "1.0.0.0", @"C:\A", true, "Contoso.App_8wekyb3d8bbwe");
+
+        await _viewModel.RemovePackageCommand.ExecuteAsync(package);
+
+        _appxServiceMock.Verify(x => x.DeprovisionPackageAsync("Contoso.App_8wekyb3d8bbwe"), Times.Once);
+        _appxServiceMock.Verify(x => x.RemovePackageAsync(It.IsAny<string>()), Times.Never);
+        Assert.Contains("Deprovisioned A", _viewModel.StatusMessage);
+    }
+
+    [Fact]
+    public async Task RemovePackageAsync_InstalledRow_UsesRemovePackageAsync()
+    {
+        _viewModel.IsElevated = true;
+        _dialogServiceMock
+            .Setup(x => x.ConfirmAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+        _appxServiceMock
+            .Setup(x => x.RemovePackageAsync(It.IsAny<string>()))
+            .ReturnsAsync(new DeploymentResult(true, null));
+        _appxServiceMock.Setup(x => x.GetInstalledPackages()).Returns([]);
+        _appxServiceMock.Setup(x => x.GetProvisionedPackages()).Returns([]);
+        var package = new AppxPackage("Full.A_1.0", "A", "Pub", "1.0.0.0", @"C:\A", false, "Contoso.App_8wekyb3d8bbwe");
+
+        await _viewModel.RemovePackageCommand.ExecuteAsync(package);
+
+        _appxServiceMock.Verify(x => x.DeprovisionPackageAsync(It.IsAny<string>()), Times.Never);
+        _appxServiceMock.Verify(x => x.RemovePackageAsync("Full.A_1.0"), Times.Once);
+    }
+
+    [Fact]
+    public async Task RemovePackageAsync_TwinRows_EachActsOnItsOwnKind()
+    {
+        _viewModel.IsElevated = true;
+        _dialogServiceMock
+            .Setup(x => x.ConfirmAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+        _appxServiceMock
+            .Setup(x => x.RemovePackageAsync(It.IsAny<string>()))
+            .ReturnsAsync(new DeploymentResult(true, null));
+        _appxServiceMock
+            .Setup(x => x.DeprovisionPackageAsync(It.IsAny<string>()))
+            .ReturnsAsync(new DeploymentResult(true, null));
+        _appxServiceMock.Setup(x => x.GetInstalledPackages()).Returns([]);
+        _appxServiceMock.Setup(x => x.GetProvisionedPackages()).Returns([]);
+        var installed = new AppxPackage("Full.A_1.0", "A", "Pub", "1.0.0.0", @"C:\A", false, "Contoso.App_8wekyb3d8bbwe");
+        var provisioned = new AppxPackage("Full.A_1.0", "A", "Pub", "1.0.0.0", @"C:\A", true, "Contoso.App_8wekyb3d8bbwe");
+
+        await _viewModel.RemovePackageCommand.ExecuteAsync(installed);
+        await _viewModel.RemovePackageCommand.ExecuteAsync(provisioned);
+
+        _appxServiceMock.Verify(x => x.RemovePackageAsync("Full.A_1.0"), Times.Once);
+        _appxServiceMock.Verify(x => x.DeprovisionPackageAsync("Contoso.App_8wekyb3d8bbwe"), Times.Once);
+    }
+
+    [Fact]
+    public void BuildRemoveConfirmation_ProvisionedStatesAllUsersScope()
+    {
+        var message = AppxManagerViewModel.BuildRemoveConfirmation(
+            new AppxPackage("Full.A_1.0", "A", "Pub", "1.0.0.0", @"C:\A", true, "Contoso.App_8wekyb3d8bbwe"));
+
+        Assert.Contains("new user accounts", message);
+        Assert.Contains("Contoso.App_8wekyb3d8bbwe", message);
+    }
+
+    [Fact]
+    public void BuildRemoveConfirmation_InstalledKeepsExistingCopy()
+    {
+        var message = AppxManagerViewModel.BuildRemoveConfirmation(
+            new AppxPackage("Full.A_1.0", "A", "Pub", "1.0.0.0", @"C:\A", false));
+
+        Assert.Contains("Are you sure you want to remove 'A'?", message);
+    }
+
+    [Fact]
+    public async Task RemovePackageAsync_ProvisionedWithoutFamily_ShowsErrorAndSkipsService()
+    {
+        _viewModel.IsElevated = true;
+        var package = new AppxPackage("Full.A_1.0", "A", "Pub", "1.0.0.0", @"C:\A", true);
+
+        await _viewModel.RemovePackageCommand.ExecuteAsync(package);
+
+        Assert.Contains("no package family name", _viewModel.ErrorMessage, StringComparison.OrdinalIgnoreCase);
+        _appxServiceMock.Verify(x => x.DeprovisionPackageAsync(It.IsAny<string>()), Times.Never);
+        _appxServiceMock.Verify(x => x.RemovePackageAsync(It.IsAny<string>()), Times.Never);
+        _dialogServiceMock.Verify(
+            x => x.ConfirmAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task RemovePackageAsync_DeprovisionFails_ShowsRemoveFailed()
+    {
+        _viewModel.IsElevated = true;
+        _dialogServiceMock
+            .Setup(x => x.ConfirmAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+        _appxServiceMock
+            .Setup(x => x.DeprovisionPackageAsync(It.IsAny<string>()))
+            .ReturnsAsync(new DeploymentResult(false, "Access is denied"));
+        var package = new AppxPackage("Full.A_1.0", "A", "Pub", "1.0.0.0", @"C:\A", true, "Contoso.App_8wekyb3d8bbwe");
+
+        await _viewModel.RemovePackageCommand.ExecuteAsync(package);
+
+        Assert.Contains("Access is denied", _viewModel.ErrorMessage);
+        _infoBarServiceMock.Verify(x => x.ShowError("Remove failed", It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public void RemovePackageCommand_CannotExecute_WhileLoading()
+    {
+        var package = new AppxPackage("Full.A_1.0", "A", "Pub", "1.0.0.0", @"C:\A", false);
+
+        _viewModel.IsElevated = true;
+        _viewModel.IsLoading = true;
+
+        Assert.False(_viewModel.RemovePackageCommand.CanExecute(package));
+    }
 }

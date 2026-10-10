@@ -9,4 +9,5 @@ public sealed record AppxPackage(
     string Publisher,
     string Version,
     string InstallLocation,
-    bool IsProvisioned);
+    bool IsProvisioned,
+    string PackageFamilyName = "");

@@ -56,18 +56,54 @@ public sealed class AppxPackageService : IAppxPackageService
         var operation = manager.RemovePackageAsync(packageFullName);
         var raw = await operation.AsTask().ConfigureAwait(false);
 
+        return MapDeploymentResult(raw, packageFullName, "remove", "Removed Appx package {FullName}");
+    }
+
+    /// <inheritdoc />
+    public async Task<DeploymentResult> DeprovisionPackageAsync(string packageFamilyName)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(packageFamilyName);
+
+        _logger.LogInformation("Deprovisioning Appx package family {Family}", packageFamilyName);
+
+        var manager = new Wmd.PackageManager();
+        var operation = manager.DeprovisionPackageForAllUsersAsync(packageFamilyName);
+        var raw = await operation.AsTask().ConfigureAwait(false);
+
+        return MapDeploymentResult(raw, packageFamilyName, "deprovision", "Deprovisioned Appx package family {Family}");
+    }
+
+    private DeploymentResult MapDeploymentResult(
+        Wmd.DeploymentResult raw, string identity, string verb, string successTemplate)
+    {
         // A nonzero ExtendedErrorCode / non-empty ErrorText is a failed deployment that
         // WinRT reports as data rather than an exception — surface it as such.
         var success = raw.ExtendedErrorCode is null || raw.ExtendedErrorCode.HResult == 0;
         if (success && string.IsNullOrWhiteSpace(raw.ErrorText))
         {
-            _logger.LogInformation("Removed Appx package {FullName}", packageFullName);
+            _logger.LogInformation(successTemplate, identity);
             return new DeploymentResult(true, null);
         }
 
-        _logger.LogWarning("Failed to remove Appx package {FullName}: {Error}",
-            packageFullName, raw.ErrorText);
+        _logger.LogWarning("Failed to {Verb} Appx package {Identity}: {Error}",
+            verb, identity, raw.ErrorText);
         return new DeploymentResult(false, raw.ErrorText);
+    }
+
+    /// <summary>
+    /// Reads an install path without letting one stale package abort enumeration
+    /// (WR-02 partial). Returns an empty string when the read throws.
+    /// </summary>
+    public static string SafeInstalledPath(Func<string> read)
+    {
+        try
+        {
+            return read();
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
 
     private static AppxPackage Map(Windows.ApplicationModel.Package package, bool isProvisioned)
@@ -79,7 +115,8 @@ public sealed class AppxPackageService : IAppxPackageService
             id.Name,
             id.Publisher,
             $"{version.Major}.{version.Minor}.{version.Build}.{version.Revision}",
-            package.InstalledLocation.Path,
-            isProvisioned);
+            SafeInstalledPath(() => package.InstalledLocation.Path),
+            isProvisioned,
+            id.FamilyName);
     }
 }

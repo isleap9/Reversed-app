@@ -16,7 +16,6 @@ namespace VainTools.App.ViewModels;
 public partial class AppxManagerViewModel : ViewModelBase
 {
     private readonly IAppxPackageService _appxService;
-    private readonly IRegistryTweakService _registry;
     private readonly IDialogService _dialogs;
     private readonly IInfoBarService _infoBar;
     private readonly ILogger<AppxManagerViewModel> _logger;
@@ -53,7 +52,6 @@ public partial class AppxManagerViewModel : ViewModelBase
         ILogger<AppxManagerViewModel> logger)
     {
         _appxService = appxService;
-        _registry = registry;
         _dialogs = dialogs;
         _infoBar = infoBar;
         _logger = logger;
@@ -121,12 +119,21 @@ public partial class AppxManagerViewModel : ViewModelBase
             return;
         }
 
+        // A provisioned row without a family name cannot be deprovisioned (T-06-24).
+        if (package.IsProvisioned && string.IsNullOrWhiteSpace(package.PackageFamilyName))
+        {
+            ErrorMessage = "This provisioned package has no package family name, so it cannot be deprovisioned.";
+            StatusMessage = "Remove blocked: no package family name.";
+            _infoBar.ShowError("Remove failed", ErrorMessage);
+            return;
+        }
+
         try
         {
-            // D-11: explicit confirmation, and T-06-01 — the package is named in the dialog.
+            // D-11: explicit confirmation naming the scope for provisioned rows.
             var confirmed = await _dialogs.ConfirmAsync(
-                "Remove Package",
-                $"Are you sure you want to remove '{package.Name}'? This action cannot be undone.",
+                package.IsProvisioned ? "Remove Provisioned Package" : "Remove Package",
+                BuildRemoveConfirmation(package),
                 confirmText: "Remove");
 
             if (!confirmed)
@@ -139,7 +146,16 @@ public partial class AppxManagerViewModel : ViewModelBase
             ErrorMessage = string.Empty;
             StatusMessage = $"Removing {package.Name}…";
 
-            var result = await _appxService.RemovePackageAsync(package.FullName);
+            DeploymentResult result;
+            if (package.IsProvisioned)
+            {
+                result = await _appxService.DeprovisionPackageAsync(package.PackageFamilyName);
+            }
+            else
+            {
+                result = await _appxService.RemovePackageAsync(package.FullName);
+            }
+
             if (!result.Success)
             {
                 throw new InvalidOperationException(
@@ -148,11 +164,18 @@ public partial class AppxManagerViewModel : ViewModelBase
                         : result.ErrorText);
             }
 
-            _infoBar.ShowSuccess("Package removed", $"'{package.Name}' has been removed.");
+            if (package.IsProvisioned)
+            {
+                _infoBar.ShowSuccess("Package deprovisioned", $"'{package.Name}' is no longer provisioned for new users.");
+            }
+            else
+            {
+                _infoBar.ShowSuccess("Package removed", $"'{package.Name}' has been removed.");
+            }
 
             // D-13: reload so the list reflects reality after a destructive operation.
             await RefreshAsync();
-            StatusMessage = $"Removed {package.Name}";
+            StatusMessage = package.IsProvisioned ? $"Deprovisioned {package.Name}" : $"Removed {package.Name}";
         }
         catch (Exception ex)
         {
@@ -168,7 +191,26 @@ public partial class AppxManagerViewModel : ViewModelBase
         }
     }
 
-    private bool CanRemovePackage(AppxPackage? package) => package is not null && IsElevated;
+    /// <summary>
+    /// Builds the confirmation message for a package removal. Provisioned rows state
+    /// the all-users scope and name the package family; installed rows keep the
+    /// existing per-user copy.
+    /// </summary>
+    public static string BuildRemoveConfirmation(AppxPackage package)
+    {
+        if (package.IsProvisioned)
+        {
+            return $"Remove the provisioned package '{package.Name}'?\n\n"
+                + "It will be deprovisioned for all users: new user accounts will no longer get this app. "
+                + "Copies already installed for existing users are not removed.\n\n"
+                + $"Package family: {package.PackageFamilyName}\n\n"
+                + "This cannot be undone from Vain Tools.";
+        }
+
+        return $"Are you sure you want to remove '{package.Name}'? This action cannot be undone.";
+    }
+
+    private bool CanRemovePackage(AppxPackage? package) => package is not null && IsElevated && !IsLoading;
 
     private static string CountPackages(int count) => count switch
     {
@@ -178,4 +220,6 @@ public partial class AppxManagerViewModel : ViewModelBase
     };
 
     partial void OnIsElevatedChanged(bool value) => RemovePackageCommand.NotifyCanExecuteChanged();
+
+    partial void OnIsLoadingChanged(bool value) => RemovePackageCommand.NotifyCanExecuteChanged();
 }

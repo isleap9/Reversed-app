@@ -81,4 +81,63 @@ public sealed class AppxPackageServiceTests
     {
         await Assert.ThrowsAsync<ArgumentException>(() => _service.RemovePackageAsync(string.Empty));
     }
+
+    [Fact]
+    public void GetInstalledPackages_AllCarryFamilyName()
+    {
+        Assert.All(_service.GetInstalledPackages(), p =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(p.PackageFamilyName));
+            Assert.StartsWith(p.Name + "_", p.PackageFamilyName, StringComparison.Ordinal);
+        });
+    }
+
+    [Fact]
+    public void GetProvisionedPackages_AllCarryFamilyName()
+    {
+        Assert.All(_service.GetProvisionedPackages(), p =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(p.PackageFamilyName));
+            Assert.StartsWith(p.Name + "_", p.PackageFamilyName, StringComparison.Ordinal);
+        });
+    }
+
+    [Fact]
+    public async Task DeprovisionPackageAsync_WithEmptyName_ThrowsArgument()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() => _service.DeprovisionPackageAsync(string.Empty));
+    }
+
+    [Fact]
+    public async Task DeprovisionPackageAsync_WithBogusFamily_NeverReportsSuccess()
+    {
+        DeploymentResult? result = null;
+        Exception? thrown = null;
+        try
+        {
+            result = await _service.DeprovisionPackageAsync("VainTools.Bogus.NotProvisioned_0000000000000");
+        }
+        catch (Exception ex)
+        {
+            thrown = ex;
+        }
+
+        Assert.True(thrown is not null || result is { Success: false }, "Bogus deprovision must throw or report failure.");
+        if (result is not null)
+        {
+            Assert.False(result.Success);
+        }
+    }
+
+    [Fact]
+    public void SafeInstalledPath_WhenReadThrows_ReturnsEmpty()
+    {
+        Assert.Equal(string.Empty, AppxPackageService.SafeInstalledPath(() => throw new InvalidOperationException("stale")));
+    }
+
+    [Fact]
+    public void SafeInstalledPath_ReturnsValue()
+    {
+        Assert.Equal("C:\\Packages\\App", AppxPackageService.SafeInstalledPath(() => "C:\\Packages\\App"));
+    }
 }
