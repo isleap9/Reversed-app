@@ -122,6 +122,9 @@ public sealed class OptionalFeaturesViewModelTests
     {
         _viewModel.IsElevated = true;
         _featuresServiceMock
+            .Setup(x => x.EnableFeatureAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FeatureChangeResult(false));
+        _featuresServiceMock
             .Setup(x => x.GetFeaturesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
         var feature = new OptionalFeature("Feature-B", "Disabled");
@@ -144,7 +147,7 @@ public sealed class OptionalFeaturesViewModelTests
         _viewModel.IsElevated = true;
         _featuresServiceMock
             .Setup(x => x.EnableFeatureAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync(new FeatureChangeResult(false));
         _featuresServiceMock
             .Setup(x => x.GetFeaturesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
@@ -181,6 +184,9 @@ public sealed class OptionalFeaturesViewModelTests
         _dialogServiceMock
             .Setup(x => x.ConfirmAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(true);
+        _featuresServiceMock
+            .Setup(x => x.DisableFeatureAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FeatureChangeResult(false));
         _featuresServiceMock
             .Setup(x => x.GetFeaturesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
@@ -241,7 +247,7 @@ public sealed class OptionalFeaturesViewModelTests
             .ReturnsAsync(true);
         _featuresServiceMock
             .Setup(x => x.DisableFeatureAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+            .ReturnsAsync(new FeatureChangeResult(false));
         _featuresServiceMock
             .Setup(x => x.GetFeaturesAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
@@ -252,6 +258,86 @@ public sealed class OptionalFeaturesViewModelTests
         _featuresServiceMock.Verify(
             x => x.GetFeaturesAsync(It.IsAny<CancellationToken>()),
             Times.Once);
+    }
+
+    [Fact]
+    public async Task EnableFeatureAsync_RestartRequired_ShowsWarningAndReloads()
+    {
+        _viewModel.IsElevated = true;
+        _featuresServiceMock
+            .Setup(x => x.EnableFeatureAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FeatureChangeResult(true));
+        _featuresServiceMock
+            .Setup(x => x.GetFeaturesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        var feature = new OptionalFeature("Feature-B", "Disabled");
+
+        await _viewModel.EnableFeatureCommand.ExecuteAsync(feature);
+
+        _infoBarServiceMock.Verify(x => x.ShowWarning("Restart required", It.IsAny<string>()), Times.Once);
+        _infoBarServiceMock.Verify(x => x.ShowError(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _featuresServiceMock.Verify(x => x.GetFeaturesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Contains("restart required", _viewModel.StatusMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task DisableFeatureAsync_RestartRequired_ShowsWarningAndReloads()
+    {
+        _viewModel.IsElevated = true;
+        _dialogServiceMock
+            .Setup(x => x.ConfirmAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(true);
+        _featuresServiceMock
+            .Setup(x => x.DisableFeatureAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new FeatureChangeResult(true));
+        _featuresServiceMock
+            .Setup(x => x.GetFeaturesAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+        var feature = new OptionalFeature("Feature-A", "Enabled");
+
+        await _viewModel.DisableFeatureCommand.ExecuteAsync(feature);
+
+        _infoBarServiceMock.Verify(x => x.ShowWarning("Restart required", It.IsAny<string>()), Times.Once);
+        _infoBarServiceMock.Verify(x => x.ShowError(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+        _featuresServiceMock.Verify(x => x.GetFeaturesAsync(It.IsAny<CancellationToken>()), Times.Once);
+        Assert.Contains("restart required", _viewModel.StatusMessage, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void FeatureCommands_CannotExecute_WhileLoading()
+    {
+        var disabled = new OptionalFeature("B", "Disabled");
+        var enabled = new OptionalFeature("A", "Enabled");
+
+        _viewModel.IsElevated = true;
+        _viewModel.IsLoading = true;
+
+        Assert.False(_viewModel.EnableFeatureCommand.CanExecute(disabled));
+        Assert.False(_viewModel.DisableFeatureCommand.CanExecute(enabled));
+    }
+
+    [Fact]
+    public void FeatureCommands_CannotExecute_ForPendingFeature()
+    {
+        var enablePending = new OptionalFeature("A", "Enable Pending");
+        var disablePending = new OptionalFeature("B", "Disable Pending");
+
+        _viewModel.IsElevated = true;
+
+        Assert.False(_viewModel.EnableFeatureCommand.CanExecute(enablePending));
+        Assert.False(_viewModel.DisableFeatureCommand.CanExecute(enablePending));
+        Assert.False(_viewModel.EnableFeatureCommand.CanExecute(disablePending));
+        Assert.False(_viewModel.DisableFeatureCommand.CanExecute(disablePending));
+    }
+
+    [Fact]
+    public void OptionalFeature_IsPending_OnlyForPendingStates()
+    {
+        Assert.False(new OptionalFeature("A", "Enabled").IsPending);
+        Assert.False(new OptionalFeature("A", "Disabled").IsPending);
+        Assert.False(new OptionalFeature("A", "Disabled with Payload Removed").IsPending);
+        Assert.True(new OptionalFeature("A", "Enable Pending").IsPending);
+        Assert.True(new OptionalFeature("A", "Disable Pending").IsPending);
     }
 
     [Fact]

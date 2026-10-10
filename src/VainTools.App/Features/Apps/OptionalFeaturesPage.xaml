@@ -86,10 +86,12 @@
                                                        Visibility="{Binding IsEnabled, Converter={StaticResource InverseBoolToVisibility}}" />
                                         </StackPanel>
                                         <Button Grid.Column="1" Content="Enable"
+                                                Visibility="{Binding IsEnabled, Converter={StaticResource InverseBoolToVisibility}}"
                                                 Command="{Binding DataContext.EnableFeatureCommand, ElementName=OptionalFeaturesRoot}"
                                                 CommandParameter="{Binding}"
                                                 VerticalAlignment="Center" />
                                         <Button Grid.Column="2" Content="Disable"
+                                                Visibility="{Binding IsEnabled, Converter={StaticResource BoolToVisibility}}"
                                                 Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                                                 Command="{Binding DataContext.DisableFeatureCommand, ElementName=OptionalFeaturesRoot}"
                                                 CommandParameter="{Binding}"

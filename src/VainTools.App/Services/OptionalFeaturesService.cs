@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 
 namespace VainTools.App.Services;
@@ -34,7 +35,24 @@ namespace VainTools.App.Services;
 /// </summary>
 public sealed class OptionalFeaturesService : IOptionalFeaturesService
 {
-    private const string DismExecutable = "dism.exe";
+    /// <summary>
+    /// Absolute System32 path so the application directory is never searched (T-06-21).
+    /// </summary>
+    public static readonly string DismPath = Path.Combine(Environment.SystemDirectory, "dism.exe");
+
+    /// <summary>ERROR_SUCCESS_REBOOT_REQUIRED: DISM applied the change; a restart finishes it.</summary>
+    public const int ExitRestartRequired = 3010;
+
+    private static readonly Regex ValidFeatureNamePattern =
+        new("^[A-Za-z0-9._-]+$", RegexOptions.Compiled);
+
+    /// <summary>
+    /// True when <paramref name="name"/> contains only characters DISM feature names
+    /// use (letters, digits, '.', '_' and '-'). Defence in depth (T-06-20): the name
+    /// travels as one argv element, and this check refuses anything else before launch.
+    /// </summary>
+    public static bool IsValidFeatureName(string? name) =>
+        !string.IsNullOrWhiteSpace(name) && ValidFeatureNamePattern.IsMatch(name);
 
     private readonly IProcessRunner _processRunner;
     private readonly ILogger<OptionalFeaturesService> _logger;
@@ -48,7 +66,8 @@ public sealed class OptionalFeaturesService : IOptionalFeaturesService
     /// <inheritdoc />
     public async Task<IReadOnlyList<OptionalFeature>> GetFeaturesAsync(CancellationToken cancellationToken = default)
     {
-        var result = await _processRunner.RunAsync(DismExecutable, "/Online /Get-Features /Format:List");
+        cancellationToken.ThrowIfCancellationRequested();
+        var result = await _processRunner.RunAsync(DismPath, "/Online", "/Get-Features", "/Format:List");
 
         if (result.ExitCode != 0)
         {
@@ -57,43 +76,64 @@ public sealed class OptionalFeaturesService : IOptionalFeaturesService
         }
 
         var features = ParseFeatures(result.StdOut);
+        if (features.Count == 0 && result.StdOut.Trim().Length > 0)
+        {
+            // A successful run whose output parses to nothing (localized DISM text,
+            // for example) must surface as a load failure, never as "No features".
+            throw new InvalidOperationException(
+                "dism.exe returned feature output that could not be read. The output may be in a language other than English.");
+        }
+
         _logger.LogInformation("Enumerated {Count} optional features", features.Count);
         return features;
     }
 
     /// <inheritdoc />
-    public async Task EnableFeatureAsync(string featureName, CancellationToken cancellationToken = default)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(featureName);
-
-        // /NoRestart: the caller decides whether to reboot, never DISM implicitly.
-        var result = await _processRunner.RunAsync(
-            DismExecutable, $"/Online /Enable-Feature /FeatureName:\"{featureName}\" /NoRestart");
-
-        if (result.ExitCode != 0)
-        {
-            throw new InvalidOperationException(
-                $"dism.exe failed to enable \"{featureName}\" (exit {result.ExitCode}). {result.StdErr.Trim()}");
-        }
-
-        _logger.LogInformation("Enabled optional feature {Feature}", featureName);
-    }
+    public Task<FeatureChangeResult> EnableFeatureAsync(string featureName, CancellationToken cancellationToken = default) =>
+        ChangeFeatureAsync("/Enable-Feature", "enable", featureName, cancellationToken);
 
     /// <inheritdoc />
-    public async Task DisableFeatureAsync(string featureName, CancellationToken cancellationToken = default)
+    public Task<FeatureChangeResult> DisableFeatureAsync(string featureName, CancellationToken cancellationToken = default) =>
+        ChangeFeatureAsync("/Disable-Feature", "disable", featureName, cancellationToken);
+
+    private async Task<FeatureChangeResult> ChangeFeatureAsync(
+        string verbSwitch, string verb, string featureName, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(featureName);
-
-        var result = await _processRunner.RunAsync(
-            DismExecutable, $"/Online /Disable-Feature /FeatureName:\"{featureName}\" /NoRestart");
-
-        if (result.ExitCode != 0)
+        if (!IsValidFeatureName(featureName))
         {
-            throw new InvalidOperationException(
-                $"dism.exe failed to disable \"{featureName}\" (exit {result.ExitCode}). {result.StdErr.Trim()}");
+            throw new ArgumentException(
+                $"'{featureName}' is not a valid Windows feature name.", nameof(featureName));
         }
 
-        _logger.LogInformation("Disabled optional feature {Feature}", featureName);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        // /NoRestart: the caller decides whether to reboot, never DISM implicitly.
+        // Two or more argv elements bind to the argument-vector overload (WR-03).
+        var result = await _processRunner.RunAsync(
+            DismPath, "/Online", verbSwitch, $"/FeatureName:{featureName}", "/NoRestart");
+
+        if (result.ExitCode == 0)
+        {
+            _logger.LogInformation("{Verb}d optional feature {Feature}", verb, featureName);
+            return new FeatureChangeResult(false);
+        }
+
+        if (result.ExitCode == ExitRestartRequired)
+        {
+            _logger.LogInformation("{Verb}d optional feature {Feature}; restart required", verb, featureName);
+            return new FeatureChangeResult(true);
+        }
+
+        var detail = result.StdErr.Trim();
+        if (detail.Length == 0)
+        {
+            // DISM writes its errors to stdout.
+            detail = result.StdOut.Trim();
+        }
+
+        throw new InvalidOperationException(
+            $"dism.exe failed to {verb} '{featureName}' (exit {result.ExitCode}). {detail}");
     }
 
     /// <summary>

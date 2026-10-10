@@ -25,7 +25,7 @@ public sealed class OptionalFeaturesServiceTests
     public async Task GetFeatures_ParsesNameAndStatePairs()
     {
         _processRunnerMock
-            .Setup(x => x.RunAsync("dism.exe", It.IsAny<string>()))
+            .Setup(x => x.RunAsync(OptionalFeaturesService.DismPath, It.IsAny<string[]>()))
             .ReturnsAsync(new ProcessResult(0, CannedFeaturesOutput, string.Empty));
 
         var features = await _service.GetFeaturesAsync();
@@ -39,7 +39,7 @@ public sealed class OptionalFeaturesServiceTests
     public async Task GetFeatures_ReturnsEmptyOnEmptyOutput()
     {
         _processRunnerMock
-            .Setup(x => x.RunAsync("dism.exe", It.IsAny<string>()))
+            .Setup(x => x.RunAsync(OptionalFeaturesService.DismPath, It.IsAny<string[]>()))
             .ReturnsAsync(new ProcessResult(0, string.Empty, string.Empty));
 
         Assert.Empty(await _service.GetFeaturesAsync());
@@ -49,7 +49,7 @@ public sealed class OptionalFeaturesServiceTests
     public async Task GetFeatures_ThrowsWhenDismFails()
     {
         _processRunnerMock
-            .Setup(x => x.RunAsync("dism.exe", It.IsAny<string>()))
+            .Setup(x => x.RunAsync(OptionalFeaturesService.DismPath, It.IsAny<string[]>()))
             .ReturnsAsync(new ProcessResult(87, string.Empty, "An error occurred"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => _service.GetFeaturesAsync());
@@ -59,14 +59,16 @@ public sealed class OptionalFeaturesServiceTests
     public async Task EnableFeatureAsync_CallsDismEnable()
     {
         _processRunnerMock
-            .Setup(x => x.RunAsync("dism.exe", It.IsAny<string>()))
+            .Setup(x => x.RunAsync(OptionalFeaturesService.DismPath, It.IsAny<string[]>()))
             .ReturnsAsync(new ProcessResult(0, string.Empty, string.Empty));
 
         await _service.EnableFeatureAsync("Microsoft-Hyper-V");
 
         _processRunnerMock.Verify(
-            x => x.RunAsync("dism.exe", It.Is<string>(a =>
-                a.Contains("/Enable-Feature") && a.Contains("Microsoft-Hyper-V") && a.Contains("/NoRestart"))),
+            x => x.RunAsync(
+                OptionalFeaturesService.DismPath,
+                It.Is<string[]>(a => a.SequenceEqual(
+                    new[] { "/Online", "/Enable-Feature", "/FeatureName:Microsoft-Hyper-V", "/NoRestart" }))),
             Times.Once);
     }
 
@@ -74,14 +76,16 @@ public sealed class OptionalFeaturesServiceTests
     public async Task DisableFeatureAsync_CallsDismDisable()
     {
         _processRunnerMock
-            .Setup(x => x.RunAsync("dism.exe", It.IsAny<string>()))
+            .Setup(x => x.RunAsync(OptionalFeaturesService.DismPath, It.IsAny<string[]>()))
             .ReturnsAsync(new ProcessResult(0, string.Empty, string.Empty));
 
         await _service.DisableFeatureAsync("Microsoft-Hyper-V");
 
         _processRunnerMock.Verify(
-            x => x.RunAsync("dism.exe", It.Is<string>(a =>
-                a.Contains("/Disable-Feature") && a.Contains("Microsoft-Hyper-V") && a.Contains("/NoRestart"))),
+            x => x.RunAsync(
+                OptionalFeaturesService.DismPath,
+                It.Is<string[]>(a => a.SequenceEqual(
+                    new[] { "/Online", "/Disable-Feature", "/FeatureName:Microsoft-Hyper-V", "/NoRestart" }))),
             Times.Once);
     }
 
@@ -89,7 +93,7 @@ public sealed class OptionalFeaturesServiceTests
     public async Task EnableFeatureAsync_ThrowsWhenDismFails()
     {
         _processRunnerMock
-            .Setup(x => x.RunAsync("dism.exe", It.IsAny<string>()))
+            .Setup(x => x.RunAsync(OptionalFeaturesService.DismPath, It.IsAny<string[]>()))
             .ReturnsAsync(new ProcessResult(1, string.Empty, "Access is denied"));
 
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
@@ -101,7 +105,7 @@ public sealed class OptionalFeaturesServiceTests
     public async Task DisableFeatureAsync_ThrowsWhenDismFails()
     {
         _processRunnerMock
-            .Setup(x => x.RunAsync("dism.exe", It.IsAny<string>()))
+            .Setup(x => x.RunAsync(OptionalFeaturesService.DismPath, It.IsAny<string[]>()))
             .ReturnsAsync(new ProcessResult(1, string.Empty, "Access is denied"));
 
         await Assert.ThrowsAsync<InvalidOperationException>(
@@ -140,6 +144,147 @@ public sealed class OptionalFeaturesServiceTests
         Assert.False(new OptionalFeature("A", "Disabled").IsEnabled);
         Assert.False(new OptionalFeature("A", "DisabledWithPayloadRemoved").IsEnabled);
         Assert.False(new OptionalFeature("A", "EnablePending").IsEnabled);
+    }
+
+    [Fact]
+    public async Task EnableFeatureAsync_Exit3010_ReturnsRestartRequired()
+    {
+        _processRunnerMock
+            .Setup(x => x.RunAsync(OptionalFeaturesService.DismPath, It.IsAny<string[]>()))
+            .ReturnsAsync(new ProcessResult(3010, string.Empty, string.Empty));
+
+        var result = await _service.EnableFeatureAsync("Microsoft-Hyper-V");
+
+        Assert.True(result.RestartRequired);
+    }
+
+    [Fact]
+    public async Task DisableFeatureAsync_Exit3010_ReturnsRestartRequired()
+    {
+        _processRunnerMock
+            .Setup(x => x.RunAsync(OptionalFeaturesService.DismPath, It.IsAny<string[]>()))
+            .ReturnsAsync(new ProcessResult(3010, string.Empty, string.Empty));
+
+        var result = await _service.DisableFeatureAsync("Microsoft-Hyper-V");
+
+        Assert.True(result.RestartRequired);
+    }
+
+    [Fact]
+    public async Task EnableFeatureAsync_Exit0_ReturnsNoRestart()
+    {
+        _processRunnerMock
+            .Setup(x => x.RunAsync(OptionalFeaturesService.DismPath, It.IsAny<string[]>()))
+            .ReturnsAsync(new ProcessResult(0, string.Empty, string.Empty));
+
+        var result = await _service.EnableFeatureAsync("Microsoft-Hyper-V");
+
+        Assert.False(result.RestartRequired);
+    }
+
+    [Fact]
+    public async Task EnableFeatureAsync_PassesFeatureNameAsDiscreteArgument()
+    {
+        _processRunnerMock
+            .Setup(x => x.RunAsync(OptionalFeaturesService.DismPath, It.IsAny<string[]>()))
+            .ReturnsAsync(new ProcessResult(0, string.Empty, string.Empty));
+
+        await _service.EnableFeatureAsync("Microsoft-Hyper-V");
+
+        _processRunnerMock.Verify(
+            x => x.RunAsync(
+                OptionalFeaturesService.DismPath,
+                It.Is<string[]>(a => a.SequenceEqual(
+                    new[] { "/Online", "/Enable-Feature", "/FeatureName:Microsoft-Hyper-V", "/NoRestart" }))),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task DisableFeatureAsync_PassesNoRestart()
+    {
+        _processRunnerMock
+            .Setup(x => x.RunAsync(OptionalFeaturesService.DismPath, It.IsAny<string[]>()))
+            .ReturnsAsync(new ProcessResult(0, string.Empty, string.Empty));
+
+        await _service.DisableFeatureAsync("Microsoft-Hyper-V");
+
+        _processRunnerMock.Verify(
+            x => x.RunAsync(
+                OptionalFeaturesService.DismPath,
+                It.Is<string[]>(a => a.Contains("/NoRestart"))),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task EnableFeatureAsync_FailureMessageFallsBackToStdOut()
+    {
+        _processRunnerMock
+            .Setup(x => x.RunAsync(OptionalFeaturesService.DismPath, It.IsAny<string[]>()))
+            .ReturnsAsync(new ProcessResult(1, "Error: something broke", string.Empty));
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(
+            () => _service.EnableFeatureAsync("Microsoft-Hyper-V"));
+        Assert.Contains("Error: something broke", ex.Message);
+    }
+
+    [Fact]
+    public void DismPath_IsUnderSystemDirectory()
+    {
+        Assert.Equal(
+            Path.Combine(Environment.SystemDirectory, "dism.exe"),
+            OptionalFeaturesService.DismPath);
+    }
+
+    [Theory]
+    [InlineData("Foo Bar")]
+    [InlineData("Foo\" /Quiet")]
+    [InlineData("Foo;Bar")]
+    public async Task EnableFeatureAsync_RejectsInvalidName_WithoutLaunching(string name)
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() => _service.EnableFeatureAsync(name));
+        _processRunnerMock.Verify(
+            x => x.RunAsync(It.IsAny<string>(), It.IsAny<string[]>()),
+            Times.Never);
+    }
+
+    [Theory]
+    [InlineData("Foo Bar")]
+    [InlineData("Foo\" /Quiet")]
+    [InlineData("Foo;Bar")]
+    public async Task DisableFeatureAsync_RejectsInvalidName_WithoutLaunching(string name)
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() => _service.DisableFeatureAsync(name));
+        _processRunnerMock.Verify(
+            x => x.RunAsync(It.IsAny<string>(), It.IsAny<string[]>()),
+            Times.Never);
+    }
+
+    [Theory]
+    [InlineData("Microsoft-Windows-Subsystem-Linux")]
+    [InlineData("NetFx3")]
+    [InlineData("Containers-DisposableClientVM")]
+    [InlineData("VirtualMachinePlatform")]
+    [InlineData("Printing-PrintToPDFServices-Features")]
+    public void IsValidFeatureName_AcceptsRealNames(string name)
+    {
+        Assert.True(OptionalFeaturesService.IsValidFeatureName(name));
+    }
+
+    [Fact]
+    public async Task GetFeatures_ThrowsWhenSuccessfulOutputHasNoParsableFeatures()
+    {
+        const string banner = """
+            Deployment Image Servicing and Management tool
+            Version: 10.0.26100.1150
+
+            The operation completed successfully.
+            """;
+        _processRunnerMock
+            .Setup(x => x.RunAsync(OptionalFeaturesService.DismPath, It.IsAny<string[]>()))
+            .ReturnsAsync(new ProcessResult(0, banner, string.Empty));
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => _service.GetFeaturesAsync());
+        Assert.Contains("could not be read", ex.Message);
     }
 
     private const string CannedFeaturesOutput = """

@@ -16,7 +16,6 @@ namespace VainTools.App.ViewModels;
 public partial class OptionalFeaturesViewModel : ViewModelBase
 {
     private readonly IOptionalFeaturesService _featuresService;
-    private readonly IRegistryTweakService _registry;
     private readonly IDialogService _dialogs;
     private readonly IInfoBarService _infoBar;
     private readonly ILogger<OptionalFeaturesViewModel> _logger;
@@ -53,7 +52,6 @@ public partial class OptionalFeaturesViewModel : ViewModelBase
         ILogger<OptionalFeaturesViewModel> logger)
     {
         _featuresService = featuresService;
-        _registry = registry;
         _dialogs = dialogs;
         _infoBar = infoBar;
         _logger = logger;
@@ -120,13 +118,22 @@ public partial class OptionalFeaturesViewModel : ViewModelBase
             ErrorMessage = string.Empty;
             StatusMessage = $"Enabling {feature.Name}…";
 
-            await _featuresService.EnableFeatureAsync(feature.Name);
+            var enableResult = await _featuresService.EnableFeatureAsync(feature.Name);
 
-            _infoBar.ShowSuccess("Feature enabled", $"'{feature.Name}' has been enabled.");
+            if (enableResult.RestartRequired)
+            {
+                _infoBar.ShowWarning("Restart required", $"'{feature.Name}' has been enabled. Restart Windows to finish the change.");
+            }
+            else
+            {
+                _infoBar.ShowSuccess("Feature enabled", $"'{feature.Name}' has been enabled.");
+            }
 
             // D-13: reload so the list reflects reality after the mutation.
             await RefreshAsync();
-            StatusMessage = $"Enabled {feature.Name}";
+            StatusMessage = enableResult.RestartRequired
+                ? $"Enabled {feature.Name}; restart required"
+                : $"Enabled {feature.Name}";
         }
         catch (Exception ex)
         {
@@ -177,13 +184,22 @@ public partial class OptionalFeaturesViewModel : ViewModelBase
             ErrorMessage = string.Empty;
             StatusMessage = $"Disabling {feature.Name}…";
 
-            await _featuresService.DisableFeatureAsync(feature.Name);
+            var disableResult = await _featuresService.DisableFeatureAsync(feature.Name);
 
-            _infoBar.ShowSuccess("Feature disabled", $"'{feature.Name}' has been disabled.");
+            if (disableResult.RestartRequired)
+            {
+                _infoBar.ShowWarning("Restart required", $"'{feature.Name}' has been disabled. Restart Windows to finish the change.");
+            }
+            else
+            {
+                _infoBar.ShowSuccess("Feature disabled", $"'{feature.Name}' has been disabled.");
+            }
 
             // D-13: reload so the list reflects reality after the mutation.
             await RefreshAsync();
-            StatusMessage = $"Disabled {feature.Name}";
+            StatusMessage = disableResult.RestartRequired
+                ? $"Disabled {feature.Name}; restart required"
+                : $"Disabled {feature.Name}";
         }
         catch (Exception ex)
         {
@@ -199,10 +215,10 @@ public partial class OptionalFeaturesViewModel : ViewModelBase
     }
 
     private bool CanEnableFeature(OptionalFeature? feature) =>
-        feature is not null && IsElevated && !feature.State.Equals("Enabled", StringComparison.OrdinalIgnoreCase);
+        feature is not null && IsElevated && !IsLoading && !feature.IsEnabled && !feature.IsPending;
 
     private bool CanDisableFeature(OptionalFeature? feature) =>
-        feature is not null && IsElevated && feature.State.Equals("Enabled", StringComparison.OrdinalIgnoreCase);
+        feature is not null && IsElevated && !IsLoading && feature.IsEnabled && !feature.IsPending;
 
     private static string CountFeatures(int count) => count switch
     {
@@ -212,6 +228,12 @@ public partial class OptionalFeaturesViewModel : ViewModelBase
     };
 
     partial void OnIsElevatedChanged(bool value)
+    {
+        EnableFeatureCommand.NotifyCanExecuteChanged();
+        DisableFeatureCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnIsLoadingChanged(bool value)
     {
         EnableFeatureCommand.NotifyCanExecuteChanged();
         DisableFeatureCommand.NotifyCanExecuteChanged();
