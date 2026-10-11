@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWinUI>true</UseWinUI>
+    <WindowsPackageType>None</WindowsPackageType>
     <Platforms>x64;x86;arm64</Platforms>
     <WindowsSdkPackageVersion>10.0.26100.57</WindowsSdkPackageVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
