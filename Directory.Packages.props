@@ -1,8 +1,10 @@
 <Project>
 
   <PropertyGroup>
-    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+    <!-- CPM is disabled: package versions are pinned directly in each .csproj
+         (NU1008 otherwise). PackageVersion entries below are retained as
+         documentation of the versions in use. -->
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
   </PropertyGroup>
 
   <ItemGroup>
