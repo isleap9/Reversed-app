@@ -1,16 +1,18 @@
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using System.Windows.Input;
 
 namespace AkariTools.App.Controls;
 
 /// <summary>
 /// Shared toggle row: a <see cref="ToggleSwitch"/> with a label (header) and an
 /// optional description. Consumers bind <see cref="Label"/>, <see cref="Description"/>,
-/// <see cref="IsOn"/> (two-way) and <see cref="IsApplying"/>, and handle
-/// <see cref="Toggled"/> to apply the change. The switch disables while
-/// <see cref="IsApplying"/> is true; programmatic <see cref="IsOn"/> changes
-/// (e.g. a revert after a failed apply) still raise <see cref="Toggled"/> so
-/// consumers can ignore no-op toggles.
+/// <see cref="IsOn"/> (one-way, VM→control) and <see cref="IsApplying"/>, and
+/// either handle <see cref="Toggled"/> or set <see cref="ToggleCommand"/> to
+/// apply user toggles. The switch disables while <see cref="IsApplying"/> is
+/// true; programmatic <see cref="IsOn"/> changes (e.g. a revert after a failed
+/// apply) still raise <see cref="Toggled"/> so consumers can ignore no-op
+/// toggles.
 /// </summary>
 public sealed partial class ToggleSettingRow : UserControl
 {
@@ -33,6 +35,16 @@ public sealed partial class ToggleSettingRow : UserControl
         DependencyProperty.Register(
             nameof(IsApplying), typeof(bool), typeof(ToggleSettingRow),
             new PropertyMetadata(false, OnIsApplyingChanged));
+
+    /// <summary>
+    /// When set, user toggles are routed here (with the switch's new value)
+    /// instead of raising <see cref="Toggled"/>. Commands survive
+    /// DataTemplates, where event handlers are unreliable in WinUI 3.
+    /// </summary>
+    public static readonly DependencyProperty ToggleCommandProperty =
+        DependencyProperty.Register(
+            nameof(ToggleCommand), typeof(ICommand), typeof(ToggleSettingRow),
+            new PropertyMetadata(null));
 
     /// <summary>
     /// Raised with the new value whenever the switch moves, including
@@ -70,6 +82,12 @@ public sealed partial class ToggleSettingRow : UserControl
         set => SetValue(IsApplyingProperty, value);
     }
 
+    public ICommand? ToggleCommand
+    {
+        get => (ICommand?)GetValue(ToggleCommandProperty);
+        set => SetValue(ToggleCommandProperty, value);
+    }
+
     private static void OnDescriptionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is ToggleSettingRow row && row.DescriptionText is not null)
@@ -89,7 +107,13 @@ public sealed partial class ToggleSettingRow : UserControl
     private void Switch_Toggled(object sender, RoutedEventArgs e)
     {
         // Read from the switch, not the DP: the x:Bind source update may lag the event.
-        if (sender is ToggleSwitch toggle)
-            Toggled?.Invoke(this, toggle.IsOn);
+        if (sender is not ToggleSwitch toggle)
+            return;
+        if (ToggleCommand is not null)
+        {
+            ToggleCommand.Execute(toggle.IsOn);
+            return;
+        }
+        Toggled?.Invoke(this, toggle.IsOn);
     }
 }

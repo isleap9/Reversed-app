@@ -1,6 +1,7 @@
 using AkariTools.Framework.Models;
 using AkariTools.Framework.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace AkariTools.App.ViewModels.General;
 
@@ -36,6 +37,9 @@ public partial class SettingRowViewModel : ObservableObject
         _description = setting.Description;
     }
 
+    /// <summary>The row definition this view model was built from (pins key paths in tests).</summary>
+    public ToggleSetting Setting => _setting;
+
     public async Task LoadAsync()
     {
         try
@@ -48,8 +52,21 @@ public partial class SettingRowViewModel : ObservableObject
         }
     }
 
+    /// <summary>
+    /// Applies the requested state. Bound to the control via the generated
+    /// <see cref="SetCommand"/>; the same-value guard makes re-fired
+    /// toggles (e.g. the switch reverting after a failed apply) no-ops.
+    /// </summary>
+    [RelayCommand]
     public async Task SetAsync(bool on)
     {
+        // Guard: the page binds IsOn OneWay, so a user toggle reaches this
+        // command while IsOn still holds the previous value. A re-fired
+        // toggle carrying the value IsOn already shows (programmatic
+        // revert) must not write.
+        if (on == IsOn)
+            return;
+
         IsApplying = true;
         try
         {
@@ -67,6 +84,13 @@ public partial class SettingRowViewModel : ObservableObject
         {
             IsApplying = false;
         }
+
+        // Force the re-read value onto the UI: IsOn only reaches the
+        // OneWay-bound control through a change notification, and a failed
+        // or no-op write re-reads to the *previous* value (no change). The
+        // raise reverts the switch to the real machine state; the toggle
+        // this re-fires is swallowed by the guard above.
+        OnPropertyChanged(nameof(IsOn));
     }
 
     private bool ReadCurrent()
