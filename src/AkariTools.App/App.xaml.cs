@@ -31,6 +31,8 @@ public partial class App : Application
                 {
                     services.AddSingleton<IThemeService, ThemeService>();
                     services.AddSingleton<IHardwareService, HardwareService>();
+                    services.AddSingleton<IRegistrySettingService, RegistrySettingService>();
+                    services.AddSingleton<IServiceControl, ServiceControl>();
                 })
                 .Build();
             LaunchLog.Write("Host built");
@@ -59,9 +61,11 @@ public partial class App : Application
         {
             var hardwareService = Host.Services.GetRequiredService<IHardwareService>();
             var themeService = Host.Services.GetRequiredService<IThemeService>();
+            var registrySettingService = Host.Services.GetRequiredService<IRegistrySettingService>();
+            var serviceControl = Host.Services.GetRequiredService<IServiceControl>();
             LaunchLog.Write("Services resolved");
 
-            MainWindow = new MainWindow(hardwareService, themeService);
+            MainWindow = new MainWindow(hardwareService, themeService, registrySettingService, serviceControl);
             LaunchLog.Write("MainWindow created");
             MainWindow.Closed += (_, _) =>
             {

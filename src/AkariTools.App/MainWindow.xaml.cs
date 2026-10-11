@@ -9,9 +9,19 @@ namespace AkariTools.App;
 
 public sealed partial class MainWindow : Window
 {
+    private readonly IHardwareService _hardwareService;
     private readonly IThemeService _themeService;
+    private readonly IRegistrySettingService _registrySettingService;
+    private readonly IServiceControl _serviceControl;
 
-    public MainWindow(IHardwareService hardwareService, IThemeService themeService)
+    private readonly Dictionary<string, Page> _pageCache = new(StringComparer.Ordinal);
+    private readonly Func<string, Page?> _pageFactory;
+
+    public MainWindow(
+        IHardwareService hardwareService,
+        IThemeService themeService,
+        IRegistrySettingService registrySettingService,
+        IServiceControl serviceControl)
     {
         LaunchLog.Write("MainWindow ctor start");
         this.InitializeComponent();
@@ -19,7 +29,13 @@ public sealed partial class MainWindow : Window
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
 
+        _hardwareService = hardwareService;
         _themeService = themeService;
+        _registrySettingService = registrySettingService;
+        _serviceControl = serviceControl;
+
+        _pageFactory = CreatePage;
+
         ApplyTheme(_themeService.CurrentTheme);
         _themeService.ThemeChanged += OnThemeChanged;
         Closed += (_, _) => _themeService.ThemeChanged -= OnThemeChanged;
@@ -48,8 +64,38 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private Page? CreatePage(string tag) => tag switch
+    {
+        "Home" => new HomePage(_hardwareService, _themeService),
+        // Task 4: construct GeneralPage here
+        // Task 5: construct ExplorerPage here
+        // Task 6: construct ContextMenuPage here
+        // Task 7: construct VisualPage here
+        // Task 8: construct DateTimePage here
+        // Task 9: construct SettingsVisibilityPage here
+        _ => null,
+    };
+
     private void NavView_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
-        // TODO: Page navigation in future tasks.
+        if (args.SelectedItem is not NavigationViewItem item)
+            return;
+        if (item.Tag is not string tag || string.IsNullOrEmpty(tag))
+            return;
+
+        if (_pageCache.TryGetValue(tag, out var cached))
+        {
+            ContentGrid.Children.Clear();
+            ContentGrid.Children.Add(cached);
+            return;
+        }
+
+        var page = _pageFactory(tag);
+        if (page is null)
+            return;
+
+        _pageCache[tag] = page;
+        ContentGrid.Children.Clear();
+        ContentGrid.Children.Add(page);
     }
 }
