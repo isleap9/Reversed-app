@@ -73,7 +73,7 @@ public sealed partial class MainWindow : Window
         "General" => new GeneralPage(_serviceControl, new BcdService(), _registrySettingService),
         "Explorer" => new ExplorerPage(_registrySettingService),
         "Visual" => new VisualPage(_registrySettingService),
-        // Task 7: construct ContextMenuPage here
+        "ContextMenu" => new ContextMenuPage(_registrySettingService),
         // Task 8: construct DateTimePage here
         // Task 9: construct SettingsVisibilityPage here
         _ => null,

@@ -99,8 +99,9 @@ public partial class SettingRowViewModel : ObservableObject
         {
             // Dword: On when the stored value equals OnValue; absent (null) = Off.
             ToggleKind.Dword => _registrySettingService.ReadDword(_setting.ValueKey) == _setting.OnValue,
-            // KeyPresence: On when the key exists.
-            ToggleKind.KeyPresence => _registrySettingService.KeyExists(_setting.ValueKey.Hive, _setting.ValueKey.Path),
+            // KeyPresence: On when the key exists. When SecondaryValueKey is
+            // set, both keys must exist for the row to show On.
+            ToggleKind.KeyPresence => KeyExistsWithSecondary(_setting.ValueKey),
             _ => false
         };
     }
@@ -114,9 +115,26 @@ public partial class SettingRowViewModel : ObservableObject
         else
         {
             if (on)
+            {
                 _registrySettingService.CreateKey(_setting.ValueKey.Hive, _setting.ValueKey.Path);
+                if (_setting.SecondaryValueKey is { } secondary)
+                    _registrySettingService.CreateKey(secondary.Hive, secondary.Path);
+            }
             else
+            {
                 _registrySettingService.DeleteKey(_setting.ValueKey.Hive, _setting.ValueKey.Path);
+                if (_setting.SecondaryValueKey is { } secondary)
+                    _registrySettingService.DeleteKey(secondary.Hive, secondary.Path);
+            }
         }
+    }
+
+    private bool KeyExistsWithSecondary(RegistryValue key)
+    {
+        if (!_registrySettingService.KeyExists(key.Hive, key.Path))
+            return false;
+        if (_setting.SecondaryValueKey is { } secondary)
+            return _registrySettingService.KeyExists(secondary.Hive, secondary.Path);
+        return true;
     }
 }
