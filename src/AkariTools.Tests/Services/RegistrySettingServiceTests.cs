@@ -25,6 +25,15 @@ public sealed class RegistrySettingServiceTests : IDisposable
     }
 
     [Fact]
+    public void WriteString_RoundTripsThroughRegistry()
+    {
+        var value = new RegistryValue(RegistryHive.CurrentUser, _keyPath, "StringValue");
+
+        Assert.True(_service.WriteString(value, "hello"));
+        Assert.Equal("hello", _service.ReadString(value));
+    }
+
+    [Fact]
     public void MissingKey_ReturnsNull()
     {
         var value = new RegistryValue(RegistryHive.CurrentUser, _keyPath, "NoSuchValue");
