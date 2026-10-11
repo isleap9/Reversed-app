@@ -75,7 +75,7 @@ public sealed partial class MainWindow : Window
         "Visual" => new VisualPage(_registrySettingService),
         "ContextMenu" => new ContextMenuPage(_registrySettingService),
         "DateTime" => new DateTimePage(_registrySettingService, _serviceControl),
-        // Task 9: construct SettingsVisibilityPage here
+        "SettingsVisibility" => new SettingsVisibilityPage(_registrySettingService),
         _ => null,
     };
 
