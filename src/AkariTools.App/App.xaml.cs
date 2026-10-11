@@ -1,3 +1,4 @@
+using AkariTools.App.Helpers;
 using AkariTools.Framework.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -15,42 +16,71 @@ public partial class App : Application
 
     public App()
     {
+        LaunchLog.Write("App ctor start");
         this.InitializeComponent();
+        this.UnhandledException += (_, e) =>
+        {
+            LaunchLog.WriteException("UnhandledException", e.Exception);
+        };
+        LaunchLog.Write("App InitializeComponent done");
 
-        Host = Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder()
-            .ConfigureServices(services =>
-            {
-                services.AddSingleton<IThemeService, ThemeService>();
-                services.AddSingleton<IHardwareService, HardwareService>();
-            })
-            .Build();
+        try
+        {
+            Host = Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder()
+                .ConfigureServices(services =>
+                {
+                    services.AddSingleton<IThemeService, ThemeService>();
+                    services.AddSingleton<IHardwareService, HardwareService>();
+                })
+                .Build();
+            LaunchLog.Write("Host built");
+        }
+        catch (Exception ex)
+        {
+            LaunchLog.WriteException("Host.Build failed", ex);
+            throw;
+        }
     }
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        LaunchLog.Write("OnLaunched start");
         _instanceMutex = new System.Threading.Mutex(true, @"Local\AkariToolboxInstance", out bool createdNew);
+        LaunchLog.Write($"Mutex createdNew={createdNew}");
         if (!createdNew)
         {
             // TODO: Activate existing instance
+            LaunchLog.Write("Second instance, exiting");
             Exit();
             return;
         }
 
-        var hardwareService = Host.Services.GetRequiredService<IHardwareService>();
-        var themeService = Host.Services.GetRequiredService<IThemeService>();
-
-        MainWindow = new MainWindow(hardwareService, themeService);
-        MainWindow.Closed += (_, _) =>
+        try
         {
-            try { _instanceMutex?.ReleaseMutex(); }
-            catch { }
-            finally
+            var hardwareService = Host.Services.GetRequiredService<IHardwareService>();
+            var themeService = Host.Services.GetRequiredService<IThemeService>();
+            LaunchLog.Write("Services resolved");
+
+            MainWindow = new MainWindow(hardwareService, themeService);
+            LaunchLog.Write("MainWindow created");
+            MainWindow.Closed += (_, _) =>
             {
-                _instanceMutex?.Dispose();
-                _instanceMutex = null;
-            }
-            Host.Dispose();
-        };
-        MainWindow.Activate();
+                try { _instanceMutex?.ReleaseMutex(); }
+                catch { }
+                finally
+                {
+                    _instanceMutex?.Dispose();
+                    _instanceMutex = null;
+                }
+                Host.Dispose();
+            };
+            MainWindow.Activate();
+            LaunchLog.Write("MainWindow activated");
+        }
+        catch (Exception ex)
+        {
+            LaunchLog.WriteException("OnLaunched failed", ex);
+            throw;
+        }
     }
 }

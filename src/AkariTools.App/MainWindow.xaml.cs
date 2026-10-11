@@ -1,3 +1,4 @@
+using AkariTools.App.Helpers;
 using AkariTools.App.Views;
 using AkariTools.Framework.Models;
 using AkariTools.Framework.Services;
@@ -12,7 +13,9 @@ public sealed partial class MainWindow : Window
 
     public MainWindow(IHardwareService hardwareService, IThemeService themeService)
     {
+        LaunchLog.Write("MainWindow ctor start");
         this.InitializeComponent();
+        LaunchLog.Write("MainWindow InitializeComponent done");
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
 
@@ -23,6 +26,7 @@ public sealed partial class MainWindow : Window
 
         ContentGrid.Children.Clear();
         ContentGrid.Children.Add(new HomePage(hardwareService, themeService));
+        LaunchLog.Write("MainWindow HomePage added");
         if (NavView.MenuItems.Count > 0 && NavView.MenuItems[0] is NavigationViewItem first)
             NavView.SelectedItem = first;
     }
