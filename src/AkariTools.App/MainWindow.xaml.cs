@@ -1,5 +1,6 @@
 using AkariTools.App.Helpers;
 using AkariTools.App.Views;
+using AkariTools.App.Views.General;
 using AkariTools.Framework.Models;
 using AkariTools.Framework.Services;
 using Microsoft.UI.Xaml;
@@ -67,7 +68,9 @@ public sealed partial class MainWindow : Window
     private Page? CreatePage(string tag) => tag switch
     {
         "Home" => new HomePage(_hardwareService, _themeService),
-        // Task 4: construct GeneralPage here
+        // IBcdService is not in the MainWindow ctor (App.xaml.cs wiring is owned by a
+        // later task); BcdService is stateless, so construct it inline here.
+        "General" => new GeneralPage(_serviceControl, new BcdService(), _registrySettingService),
         // Task 5: construct ExplorerPage here
         // Task 6: construct ContextMenuPage here
         // Task 7: construct VisualPage here
