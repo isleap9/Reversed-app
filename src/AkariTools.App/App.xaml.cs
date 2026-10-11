@@ -40,6 +40,17 @@ public partial class App : Application
         var themeService = Host.Services.GetRequiredService<IThemeService>();
 
         MainWindow = new MainWindow(hardwareService, themeService);
+        MainWindow.Closed += (_, _) =>
+        {
+            try { _instanceMutex?.ReleaseMutex(); }
+            catch { }
+            finally
+            {
+                _instanceMutex?.Dispose();
+                _instanceMutex = null;
+            }
+            Host.Dispose();
+        };
         MainWindow.Activate();
     }
 }

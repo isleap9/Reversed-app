@@ -9,8 +9,14 @@ namespace AkariTools.App.Controls;
 
 public class StarField : Canvas
 {
+    private static readonly SolidColorBrush DimmedStarBrush =
+        new(Microsoft.UI.Colors.Gray);
+
     private readonly List<Star> _stars = new();
     private readonly DispatcherTimer _timer;
+    private readonly Random _random = new();
+    private double _elapsedSeconds;
+    private bool _dimForLight;
 
     public StarField()
     {
@@ -23,6 +29,20 @@ public class StarField : Canvas
     public int StarCount { get; set; } = 80;
     public double StarSize { get; set; } = 2.0;
     public Brush StarColor { get; set; } = new SolidColorBrush(Microsoft.UI.Colors.White);
+
+    /// <summary>
+    /// Dims the white stars for light themes so they stay subtle on bright
+    /// backgrounds; restores full brightness for dark themes.
+    /// </summary>
+    public void ApplyLightDim(bool isLight)
+    {
+        _dimForLight = isLight;
+        foreach (var star in _stars)
+        {
+            star.Element.Fill = _dimForLight ? DimmedStarBrush : StarColor;
+            star.Element.Opacity = star.BaseOpacity * (_dimForLight ? 0.4 : 1.0);
+        }
+    }
 
     private void Start()
     {
@@ -37,7 +57,6 @@ public class StarField : Canvas
         Children.Clear();
         _stars.Clear();
 
-        var rnd = new Random();
         double w = ActualWidth > 0 ? ActualWidth : 800;
         double h = ActualHeight > 0 ? ActualHeight : 600;
 
@@ -47,25 +66,31 @@ public class StarField : Canvas
             {
                 Width = StarSize,
                 Height = StarSize,
-                Fill = StarColor,
-                Opacity = rnd.NextDouble() * 0.5 + 0.1
+                Fill = _dimForLight ? DimmedStarBrush : StarColor,
+                Opacity = _random.NextDouble() * 0.5 + 0.1
             };
 
-            double x = rnd.NextDouble() * w;
-            double y = rnd.NextDouble() * h;
+            double x = _random.NextDouble() * w;
+            double y = _random.NextDouble() * h;
             SetLeft(ellipse, x);
             SetTop(ellipse, y);
 
             _stars.Add(new Star { Element = ellipse, X = x, Y = y, BaseOpacity = ellipse.Opacity });
             Children.Add(ellipse);
         }
+
+        if (_dimForLight)
+            ApplyLightDim(true);
     }
 
     private void Timer_Tick(object? sender, object e)
     {
+        _elapsedSeconds += _timer.Interval.TotalSeconds;
+
         double w = ActualWidth > 0 ? ActualWidth : 800;
         double h = ActualHeight > 0 ? ActualHeight : 600;
-        var rnd = new Random();
+
+        double maxOpacity = _dimForLight ? 0.25 : 0.7;
 
         foreach (var star in _stars)
         {
@@ -73,15 +98,15 @@ public class StarField : Canvas
             if (star.Y > h)
             {
                 star.Y = 0;
-                star.X = rnd.NextDouble() * w;
+                star.X = _random.NextDouble() * w;
             }
 
             SetLeft(star.Element, star.X);
             SetTop(star.Element, star.Y);
 
-            // Subtle twinkle
-            double opacity = star.BaseOpacity + Math.Sin(DateTime.Now.Ticks / 1000.0 + star.X) * 0.1;
-            star.Element.Opacity = Math.Clamp(opacity, 0.05, 0.7);
+            // Subtle twinkle driven by a monotonic clock.
+            double opacity = star.BaseOpacity + Math.Sin(_elapsedSeconds * 2.0 + star.X + star.Y) * 0.1;
+            star.Element.Opacity = Math.Clamp(opacity, 0.05, maxOpacity);
         }
     }
 

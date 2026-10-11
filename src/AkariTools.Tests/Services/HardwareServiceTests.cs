@@ -22,6 +22,10 @@ public sealed class HardwareServiceTests
     {
         var info = await new HardwareService().LoadHardwareInfoAsync();
 
-        Assert.Contains("GB", info.Memory);
+        // VMs may expose no Win32_PhysicalMemory rows; "Unknown" is the
+        // documented fallback and must not fail CI.
+        Assert.True(
+            info.Memory.Contains("GB") || info.Memory == "Unknown",
+            $"Expected memory to contain 'GB' or be 'Unknown', but was '{info.Memory}'.");
     }
 }

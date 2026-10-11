@@ -17,11 +17,15 @@ public sealed class HardwareService : IHardwareService
         try
         {
             using var searcher = new ManagementObjectSearcher(query);
-            foreach (ManagementObject obj in searcher.Get())
+            using ManagementObjectCollection results = searcher.Get();
+            foreach (ManagementObject obj in results)
             {
-                var value = obj[property]?.ToString()?.Trim();
-                if (!string.IsNullOrWhiteSpace(value))
-                    return value;
+                using (obj)
+                {
+                    var value = obj[property]?.ToString()?.Trim();
+                    if (!string.IsNullOrWhiteSpace(value))
+                        return value;
+                }
             }
         }
         catch
@@ -42,14 +46,18 @@ public sealed class HardwareService : IHardwareService
         try
         {
             using var searcher = new ManagementObjectSearcher("SELECT Product, Manufacturer FROM Win32_BaseBoard");
-            foreach (ManagementObject obj in searcher.Get())
+            using ManagementObjectCollection results = searcher.Get();
+            foreach (ManagementObject obj in results)
             {
-                var product = obj["Product"]?.ToString()?.Trim();
-                var manufacturer = obj["Manufacturer"]?.ToString()?.Trim();
-                var combined = string.Join(" ", new[] { manufacturer, product }
-                    .Where(s => !string.IsNullOrWhiteSpace(s))).Trim();
-                if (!string.IsNullOrWhiteSpace(combined))
-                    return combined;
+                using (obj)
+                {
+                    var product = obj["Product"]?.ToString()?.Trim();
+                    var manufacturer = obj["Manufacturer"]?.ToString()?.Trim();
+                    var combined = string.Join(" ", new[] { manufacturer, product }
+                        .Where(s => !string.IsNullOrWhiteSpace(s))).Trim();
+                    if (!string.IsNullOrWhiteSpace(combined))
+                        return combined;
+                }
             }
         }
         catch
@@ -65,17 +73,21 @@ public sealed class HardwareService : IHardwareService
         {
             using var searcher = new ManagementObjectSearcher(
                 "SELECT Capacity, Speed, ConfiguredClockSpeed FROM Win32_PhysicalMemory");
+            using ManagementObjectCollection results = searcher.Get();
             long totalBytes = 0;
             var moduleSpeeds = new List<uint>();
             int modules = 0;
-            foreach (ManagementObject obj in searcher.Get())
+            foreach (ManagementObject obj in results)
             {
-                modules++;
-                if (ulong.TryParse(obj["Capacity"]?.ToString(), out var bytes))
-                    totalBytes += (long)bytes;
-                var speed = obj["Speed"] ?? obj["ConfiguredClockSpeed"];
-                if (uint.TryParse(speed?.ToString(), out var mhz) && mhz > 0)
-                    moduleSpeeds.Add(mhz);
+                using (obj)
+                {
+                    modules++;
+                    if (ulong.TryParse(obj["Capacity"]?.ToString(), out var bytes))
+                        totalBytes += (long)bytes;
+                    var speed = obj["Speed"] ?? obj["ConfiguredClockSpeed"];
+                    if (uint.TryParse(speed?.ToString(), out var mhz) && mhz > 0)
+                        moduleSpeeds.Add(mhz);
+                }
             }
 
             if (modules == 0 || totalBytes <= 0)
