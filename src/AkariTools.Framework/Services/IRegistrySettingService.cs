@@ -12,4 +12,5 @@ public interface IRegistrySettingService
     bool KeyExists(RegistryHive hive, string path);
     bool CreateKey(RegistryHive hive, string path);
     bool DeleteKey(RegistryHive hive, string path);
+    bool DeleteValue(RegistryValue value);
 }
