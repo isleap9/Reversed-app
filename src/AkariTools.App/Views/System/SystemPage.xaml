@@ -304,13 +304,13 @@
                     </ItemsRepeater>
                 </Expander>
 
-                <!-- Task 6a: Manual Windows Updates + Print Service segmented
-                     rows. Each row binds SelectedIndex OneWay with user picks
-                     flowing through SelectCommand (a TwoWay binding would push
-                     SelectedIndex to the VM before the command runs and trip
-                     the VM's same-value guard). Game Bar and Push
-                     Notifications rows arrive in Task 6b, with the
-                     SystemViewModel host wiring for all four. -->
+                <!-- Task 6: segmented rows (Manual Windows Updates, Print
+                     Service, Game Bar, Push Notifications). Each row binds
+                     SelectedIndex OneWay with user picks flowing through
+                     SelectCommand (a TwoWay binding would push SelectedIndex
+                     to the VM before the command runs and trip the VM's
+                     same-value guard). All four rows are bound to live host
+                     VMs constructed in SystemPage code-behind. -->
                 <controls:SegmentedSettingRow
                     Label="{Binding ManualUpdates.Label, Mode=OneWay}"
                     Description="{Binding ManualUpdates.Description, Mode=OneWay}"
@@ -331,13 +331,25 @@
                     Text="{Binding PrintService.LastError, Mode=OneWay}"
                     Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                     TextWrapping="Wrap" />
-
-                <!-- Task 6b: Game Bar and Push Notifications segmented rows
-                     arrive next. -->
+                <controls:SegmentedSettingRow
+                    Label="{Binding GameBar.Label, Mode=OneWay}"
+                    Description="{Binding GameBar.Description, Mode=OneWay}"
+                    SelectedIndex="{Binding GameBar.SelectedIndex, Mode=OneWay}"
+                    IsApplying="{Binding GameBar.IsApplying, Mode=OneWay}"
+                    SelectCommand="{Binding GameBar.SelectCommand, Mode=OneWay}" />
                 <TextBlock
-                    Text="Game Bar and Push Notifications segmented rows arrive in Task 6b."
-                    FontSize="13"
-                    Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                    Text="{Binding GameBar.LastError, Mode=OneWay}"
+                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                    TextWrapping="Wrap" />
+                <controls:SegmentedSettingRow
+                    Label="{Binding PushNotifications.Label, Mode=OneWay}"
+                    Description="{Binding PushNotifications.Description, Mode=OneWay}"
+                    SelectedIndex="{Binding PushNotifications.SelectedIndex, Mode=OneWay}"
+                    IsApplying="{Binding PushNotifications.IsApplying, Mode=OneWay}"
+                    SelectCommand="{Binding PushNotifications.SelectCommand, Mode=OneWay}" />
+                <TextBlock
+                    Text="{Binding PushNotifications.LastError, Mode=OneWay}"
+                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"
                     TextWrapping="Wrap" />
             </StackPanel>
         </ScrollViewer>

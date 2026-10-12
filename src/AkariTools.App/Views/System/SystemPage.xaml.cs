@@ -36,7 +36,11 @@ public sealed partial class SystemPage : Page
             new ContextMenuViewModel(registrySettingService),
             new VisualViewModel(registrySettingService),
             new DateTimeViewModel(registrySettingService, serviceControl, dateFormatService, timeZoneService, cliRunner),
-            new SettingsVisibilityViewModel(registrySettingService));
+            new SettingsVisibilityViewModel(registrySettingService),
+            new ManualUpdatesViewModel(registrySettingService),
+            new PrintServiceViewModel(serviceControl),
+            new GameBarViewModel(registrySettingService),
+            new PushNotificationsViewModel(registrySettingService, serviceControl));
     }
 
     private async void Page_Loaded(object sender, RoutedEventArgs e)

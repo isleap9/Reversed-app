@@ -20,18 +20,34 @@ public sealed class SystemViewModel
 
     public SettingsVisibilityViewModel SettingsVisibility { get; }
 
+    public ManualUpdatesViewModel ManualUpdates { get; }
+
+    public PrintServiceViewModel PrintService { get; }
+
+    public GameBarViewModel GameBar { get; }
+
+    public PushNotificationsViewModel PushNotifications { get; }
+
     public SystemViewModel(
         ExplorerViewModel explorer,
         ContextMenuViewModel contextMenu,
         VisualViewModel visual,
         DateTimeViewModel dateTime,
-        SettingsVisibilityViewModel settingsVisibility)
+        SettingsVisibilityViewModel settingsVisibility,
+        ManualUpdatesViewModel manualUpdates,
+        PrintServiceViewModel printService,
+        GameBarViewModel gameBar,
+        PushNotificationsViewModel pushNotifications)
     {
         Explorer = explorer;
         ContextMenu = contextMenu;
         Visual = visual;
         DateTime = dateTime;
         SettingsVisibility = settingsVisibility;
+        ManualUpdates = manualUpdates;
+        PrintService = printService;
+        GameBar = gameBar;
+        PushNotifications = pushNotifications;
     }
 
     public async Task LoadAsync()
@@ -41,5 +57,9 @@ public sealed class SystemViewModel
         await Visual.LoadAsync();
         await DateTime.LoadAsync();
         await SettingsVisibility.LoadAsync();
+        await ManualUpdates.LoadAsync();
+        await PrintService.LoadAsync();
+        await GameBar.LoadAsync();
+        await PushNotifications.LoadAsync();
     }
 }
