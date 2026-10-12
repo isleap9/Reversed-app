@@ -77,24 +77,16 @@ public sealed class RegistrySettingServiceTests : IDisposable
     [Fact]
     public void DeleteValue_RemovesSingleValueKeepsSiblings()
     {
-        var valuePath = $@"Software\AkariToolbox.Tests\{Guid.NewGuid():N}";
-        var value = new RegistryValue(RegistryHive.CurrentUser, valuePath, "TestValue");
+        var value = new RegistryValue(RegistryHive.CurrentUser, _keyPath, "TestValue");
+        var sibling = new RegistryValue(RegistryHive.CurrentUser, _keyPath, "SiblingValue");
 
-        // Write a value first
+        // Both values coexist first, reusing the fixture throwaway key.
         Assert.True(_service.WriteString(value, "hello"));
+        Assert.True(_service.WriteString(sibling, "world"));
 
-        // Verify it exists
-        Assert.Equal("hello", _service.ReadString(value));
-
-        // Delete it and verify it's gone
         Assert.True(_service.DeleteValue(value));
 
         Assert.Null(_service.ReadString(value));
-
-        // Add a sibling and verify both were handled
-        var sibling = new RegistryValue(RegistryHive.CurrentUser, valuePath, "SiblingValue");
-        Assert.True(_service.WriteString(sibling, "world"));
-
         Assert.Equal("world", _service.ReadString(sibling));
     }
 }

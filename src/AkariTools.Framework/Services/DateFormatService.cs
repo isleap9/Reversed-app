@@ -16,20 +16,77 @@ public sealed class DateFormatService : IDateFormatService
     }
 
     public string? GetLocaleName()
-        => _registry.ReadString(new RegistryValue(RegistryHive.CurrentUser, _intlPath, "LocaleName"));
+    {
+        try
+        {
+            return _registry.ReadString(new RegistryValue(RegistryHive.CurrentUser, _intlPath, "LocaleName"));
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     public bool SetLocaleName(string data)
-        => _registry.WriteString(new RegistryValue(RegistryHive.CurrentUser, _intlPath, "LocaleName"), data);
+    {
+        try
+        {
+            return _registry.WriteString(new RegistryValue(RegistryHive.CurrentUser, _intlPath, "LocaleName"), data);
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     public string? GetValue(string intlName)
-        => _registry.ReadString(new RegistryValue(RegistryHive.CurrentUser, _intlPath, intlName));
+    {
+        try
+        {
+            return _registry.ReadString(new RegistryValue(RegistryHive.CurrentUser, _intlPath, intlName));
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     public bool SetValue(string intlName, string data)
-        => _registry.WriteString(new RegistryValue(RegistryHive.CurrentUser, _intlPath, intlName), data);
+    {
+        try
+        {
+            return _registry.WriteString(new RegistryValue(RegistryHive.CurrentUser, _intlPath, intlName), data);
+        }
+        catch
+        {
+            return false;
+        }
+    }
 
     public int? GetFirstDay()
-        => _registry.ReadDword(new RegistryValue(RegistryHive.CurrentUser, _intlPath, "iFirstDayOfWeek"));
+    {
+        try
+        {
+            // The real iFirstDayOfWeek representation is REG_SZ (decimal string).
+            var raw = _registry.ReadString(new RegistryValue(RegistryHive.CurrentUser, _intlPath, "iFirstDayOfWeek"));
+            return int.TryParse(raw, out var index) ? index : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     public bool SetFirstDay(int index)
-        => _registry.WriteDword(new RegistryValue(RegistryHive.CurrentUser, _intlPath, "iFirstDayOfWeek"), index);
+    {
+        try
+        {
+            // The real iFirstDayOfWeek representation is REG_SZ (decimal string), not REG_DWORD.
+            return _registry.WriteString(new RegistryValue(RegistryHive.CurrentUser, _intlPath, "iFirstDayOfWeek"), index.ToString());
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }

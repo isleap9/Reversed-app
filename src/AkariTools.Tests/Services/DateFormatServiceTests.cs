@@ -39,20 +39,29 @@ public sealed class DateFormatServiceTests : IDisposable
     [Fact]
     public void FirstDay_RoundTripsAsDecimalString()
     {
-        var service = new DateFormatService(new RegistrySettingService(), _intlPath);
-        var expected = 1;
-        Assert.True(service.SetFirstDay(expected));
-        Assert.Equal(expected, service.GetFirstDay());
+        var registry = new RegistrySettingService();
+        var service = new DateFormatService(registry, _intlPath);
+        Assert.True(service.SetFirstDay(1));
+        Assert.Equal(1, service.GetFirstDay());
+        // The real iFirstDayOfWeek representation is REG_SZ "1", not REG_DWORD.
+        Assert.Equal("1", registry.ReadString(new RegistryValue(RegistryHive.CurrentUser, _intlPath, "iFirstDayOfWeek")));
+    }
+
+    [Fact]
+    public void FirstDay_Unparseable_ReturnsNull()
+    {
+        var registry = new RegistrySettingService();
+        var service = new DateFormatService(registry, _intlPath);
+        Assert.True(registry.WriteString(new RegistryValue(RegistryHive.CurrentUser, _intlPath, "iFirstDayOfWeek"), "not-a-number"));
+        Assert.Null(service.GetFirstDay());
     }
 
     [Fact]
     public void SetFailure_ReturnsFalseNotThrow()
     {
         var service = new DateFormatService(new RegistrySettingService(), _intlPath);
-        // Verify the method returns a boolean without throwing;
-        // the write to the throwaway path succeeds (short value name "LocaleName"),
-        // so we assert True. The failure-contract (returning false without throwing)
-        // is verified by RegistrySettingServiceTests.WriteFailure_ReturnsFalseNotThrow.
-        Assert.True(service.SetLocaleName("test"));
+        // A value name past the 16383-char registry limit forces a real failure
+        // of this service: it must return false without throwing.
+        Assert.False(service.SetValue(new string('v', 20000), "x"));
     }
 }
