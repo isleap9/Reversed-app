@@ -44,6 +44,7 @@ public partial class ManualUpdatesViewModel : SegmentedRowViewModel
         catch
         {
             // Never throw: leave SelectedIndex at its previous value on failure.
+            LastError ??= $"Failed to read {ValueName}.";
         }
     }
 

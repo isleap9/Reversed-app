@@ -72,6 +72,18 @@ public sealed class SegmentedViewModelTests
     }
 
     [Fact]
+    public async Task ManualUpdates_Load_Failure_SetsError()
+    {
+        var registry = new Mock<IRegistrySettingService>();
+        registry.Setup(r => r.ReadDword(It.IsAny<RegistryValue>())).Throws<InvalidOperationException>();
+
+        var vm = new ManualUpdatesViewModel(registry.Object);
+        await vm.LoadAsync();
+
+        Assert.NotNull(vm.LastError);
+    }
+
+    [Fact]
     public async Task Segmented_SameIndex_SkipsWrite()
     {
         // A re-fired pick carrying the value already shown (e.g. the
@@ -100,6 +112,18 @@ public sealed class SegmentedViewModelTests
 
         Assert.Equal(1, vm.SelectedIndex);
         Assert.Equal("Manual", vm.Note);
+    }
+
+    [Fact]
+    public async Task PrintService_Load_Failure_SetsError()
+    {
+        var serviceControl = new Mock<IServiceControl>();
+        serviceControl.Setup(s => s.GetStartMode(It.IsAny<string>())).Throws<InvalidOperationException>();
+
+        var vm = new PrintServiceViewModel(serviceControl.Object);
+        await vm.LoadAsync();
+
+        Assert.NotNull(vm.LastError);
     }
 
     [Fact]
