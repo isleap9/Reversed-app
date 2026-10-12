@@ -1,7 +1,6 @@
 using AkariTools.Framework.Models;
 using AkariTools.Framework.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using System.Collections.ObjectModel;
 
 namespace AkariTools.App.ViewModels.General;
@@ -85,22 +84,33 @@ public sealed partial class SettingsVisibilityViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    public async Task ToggleAsync(SettingsPageRow? row)
+    /// <summary>
+    /// Applies the switch's requested value for one row. The view binds
+    /// <see cref="SettingsPageRow.IsHidden"/> OneWay and passes the switch's
+    /// new value explicitly, so the VM SETs instead of flipping: a TwoWay
+    /// push would already have applied the flip before any handler runs, and
+    /// flipping again inverts every user toggle. Same-value calls (revert
+    /// echoes after a failed apply) are no-ops. Never throws: failures
+    /// revert the row to its previous value.
+    /// </summary>
+    public async Task SetHiddenAsync(SettingsPageRow row, bool hidden)
     {
-        if (row is null || IsApplying)
+        if (row is null || IsApplying || row.IsHidden == hidden)
             return;
 
         IsApplying = true;
+        var previous = row.IsHidden;
         try
         {
-            row.IsHidden = !row.IsHidden;
-            await Task.Run(() => WriteVisibility());
+            row.IsHidden = hidden;
+            var wrote = await Task.Run(() => WriteVisibility());
+            if (!wrote)
+                row.IsHidden = previous;
         }
         catch
         {
             // Revert on failure.
-            row.IsHidden = !row.IsHidden;
+            row.IsHidden = previous;
         }
         finally
         {
@@ -108,11 +118,11 @@ public sealed partial class SettingsVisibilityViewModel : ObservableObject
         }
     }
 
-    private void WriteVisibility()
+    private bool WriteVisibility()
     {
         var hidden = Pages.Where(p => p.IsHidden).Select(p => p.Uri);
         var value = "hide:" + string.Join(";", hidden);
-        _registrySettingService.WriteString(
+        return _registrySettingService.WriteString(
             new RegistryValue(
                 RegistryHive.CurrentUser,
                 PoliciesExplorerPath,

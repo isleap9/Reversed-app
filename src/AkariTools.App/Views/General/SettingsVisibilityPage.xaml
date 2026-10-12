@@ -39,7 +39,7 @@
                                 Margin="0,0,0,8">
                                 <ToggleSwitch
                                     Header="{x:Bind Name, Mode=OneWay}"
-                                    IsOn="{x:Bind IsHidden, Mode=TwoWay}"
+                                    IsOn="{x:Bind IsHidden, Mode=OneWay}"
                                     Toggled="ToggleSwitch_Toggled" />
                             </Border>
                         </DataTemplate>

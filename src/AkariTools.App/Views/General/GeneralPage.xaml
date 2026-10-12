@@ -5,8 +5,9 @@
     Loaded="Page_Loaded">
 
     <!-- General page: Hyper-V / Spooler / RDP toggles.
-         Rows are inline ToggleSwitch controls; the shared row control
-         (ToggleSettingRow) arrives with Task 5 — migrate if it diverges. -->
+         Switches bind OneWay and handlers pass the switch value explicitly:
+         a TwoWay binding would push IsOn to the VM before Toggled fires and
+         trip the same-value guard, deadening every toggle. -->
     <Grid>
         <ScrollViewer>
             <StackPanel
@@ -31,7 +32,7 @@
                         <ToggleSwitch
                             x:Name="HyperVSwitch"
                             Header="Hyper-V"
-                            IsOn="{Binding HyperVOn, Mode=TwoWay}"
+                            IsOn="{Binding HyperVOn, Mode=OneWay}"
                             Toggled="HyperV_Toggled" />
                         <TextBlock
                             Text="Hypervisor launch type (bcdedit hypervisorlaunchtype). Requires a restart to take effect."
@@ -47,7 +48,7 @@
                         <ToggleSwitch
                             x:Name="SpoolerSwitch"
                             Header="Print Spooler"
-                            IsOn="{Binding SpoolerOn, Mode=TwoWay}"
+                            IsOn="{Binding SpoolerOn, Mode=OneWay}"
                             Toggled="Spooler_Toggled" />
                         <TextBlock
                             FontSize="12"
@@ -69,7 +70,7 @@
                         <ToggleSwitch
                             x:Name="RdpSwitch"
                             Header="Remote Desktop"
-                            IsOn="{Binding RdpOn, Mode=TwoWay}"
+                            IsOn="{Binding RdpOn, Mode=OneWay}"
                             Toggled="Rdp_Toggled" />
                         <TextBlock
                             Text="Driven by fDenyTSConnections (0 = On); applies the TermService start mode and running state."

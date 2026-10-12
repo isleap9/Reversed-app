@@ -22,4 +22,10 @@ public sealed partial class DateTimePage : Page
         if (ViewModel is not null)
             await ViewModel.LoadAsync();
     }
+
+    private void Remove_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is not null && sender is Button { Tag: string server })
+            ViewModel.RemoveServerCommand.Execute(server);
+    }
 }

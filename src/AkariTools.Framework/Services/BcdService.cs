@@ -50,7 +50,9 @@ public sealed class BcdService : IBcdService
     {
         try
         {
-            var output = RunBcdEdit("/enum");
+            // {current} scopes the read to the running OS: /enum alone returns
+            // every boot entry and the parser takes the first match (spec §12.9).
+            var output = RunBcdEdit("/enum {current}");
             return output is null ? null : BcdParser.ParseSetting(output, name);
         }
         catch

@@ -43,10 +43,19 @@
                                 CornerRadius="8"
                                 Padding="12,8"
                                 Margin="0,0,0,4">
-                                <TextBlock
-                                    Text="{x:Bind}"
-                                    FontSize="14"
-                                    Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                                <Grid ColumnDefinitions="*,Auto">
+                                    <TextBlock
+                                        Text="{x:Bind}"
+                                        FontSize="14"
+                                        Foreground="{ThemeResource TextFillColorPrimaryBrush}"
+                                        VerticalAlignment="Center" />
+                                    <Button
+                                        Grid.Column="1"
+                                        Content="Remove"
+                                        Tag="{x:Bind}"
+                                        Click="Remove_Click"
+                                        Margin="12,0,0,0" />
+                                </Grid>
                             </Border>
                         </DataTemplate>
                     </ItemsRepeater.ItemTemplate>

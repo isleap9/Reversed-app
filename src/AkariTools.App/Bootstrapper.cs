@@ -40,7 +40,9 @@ internal static class Bootstrapper
             }
 
             // version 0x00010000 = 1.0, tag "2.5.1" matches installed runtime.
-            MddBootstrapInitialize(0x00010000, "2.5.1");
+            // minVersion 0.0.0.0 accepts any framework of this release line;
+            // failure still falls through to the installed-framework fallback.
+            MddBootstrapInitialize(0x00010000, "2.5.1", default);
         }
         catch
         {
@@ -49,6 +51,16 @@ internal static class Bootstrapper
         }
     }
 
-    [DllImport("Microsoft.WindowsAppRuntime.Bootstrap.dll", SetLastError = true)]
-    private static extern int MddBootstrapInitialize(uint version, string tag);
+    // Native PACKAGE_VERSION: Revision/Build/Minor/Major words, low to high.
+    [StructLayout(LayoutKind.Sequential)]
+    private readonly struct PackageVersion
+    {
+        public readonly ushort Revision;
+        public readonly ushort Build;
+        public readonly ushort Minor;
+        public readonly ushort Major;
+    }
+
+    [DllImport("Microsoft.WindowsAppRuntime.Bootstrap.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
+    private static extern int MddBootstrapInitialize(uint version, string tag, PackageVersion minVersion);
 }

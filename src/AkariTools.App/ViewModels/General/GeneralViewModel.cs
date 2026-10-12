@@ -75,13 +75,21 @@ public partial class GeneralViewModel : ObservableObject
     [RelayCommand]
     public async Task SetHyperVAsync(bool on)
     {
+        // Same-value guard: the view binds OneWay, so a user toggle reaches
+        // here while HyperVOn holds the previous value; a re-fired toggle
+        // carrying the shown value (revert echo) must not write.
+        if (on == HyperVOn)
+            return;
+
         LastError = null;
         var value = on ? "auto" : "off";
         var ok = await Task.Run(() => _bcdService.Set(HyperVSettingName, value));
         if (!ok)
         {
-            // Leave HyperVOn at its previous value so the UI switch reverts.
+            // HyperVOn is unchanged, so force a notification: the OneWay-bound
+            // switch still shows the user's flipped state and must snap back.
             LastError = $"Failed to set {HyperVSettingName} to '{value}'.";
+            OnPropertyChanged(nameof(HyperVOn));
             return;
         }
         HyperVOn = on;
@@ -90,17 +98,22 @@ public partial class GeneralViewModel : ObservableObject
     [RelayCommand]
     public async Task SetSpoolerAsync(bool on)
     {
+        if (on == SpoolerOn)
+            return;
+
         LastError = null;
         var mode = on ? ServiceStartMode.Automatic : ServiceStartMode.Disabled;
         var ok = await Task.Run(() => _serviceControl.SetStartMode(SpoolerServiceName, mode));
         if (!ok)
         {
-            // Leave SpoolerOn at its previous value so the UI switch reverts.
             LastError = $"Failed to set {SpoolerServiceName} start mode to {mode}.";
+            OnPropertyChanged(nameof(SpoolerOn));
             return;
         }
 
         // Immediate effect: start/stop the running service to match (spec §12.7).
+        // SpoolerOn follows the start mode (spec §12.3), which was set, so the
+        // switch stays even when the running state lags; LastError says so.
         var runningOk = on
             ? await Task.Run(() => _serviceControl.StartService(SpoolerServiceName))
             : await Task.Run(() => _serviceControl.StopService(SpoolerServiceName));
@@ -114,6 +127,9 @@ public partial class GeneralViewModel : ObservableObject
     [RelayCommand]
     public async Task SetRdpAsync(bool on)
     {
+        if (on == RdpOn)
+            return;
+
         LastError = null;
         var mode = on ? ServiceStartMode.Automatic : ServiceStartMode.Disabled;
         var flagValue = on ? 0 : 1;
@@ -124,19 +140,26 @@ public partial class GeneralViewModel : ObservableObject
             new RegistryValue(RegistryHive.LocalMachine, RdpFlagPath, RdpFlagName), flagValue));
         if (!flagOk)
         {
-            // Leave RdpOn at its previous value so the UI switch reverts.
             LastError = $"Failed to write {RdpFlagName}.";
+            OnPropertyChanged(nameof(RdpOn));
             return;
         }
 
         var modeOk = await Task.Run(() => _serviceControl.SetStartMode(TermServiceName, mode));
         if (!modeOk)
         {
+            // Roll the flag back: nothing else was applied, so restoring it
+            // leaves the machine exactly as the (unchanged) switch shows.
+            await Task.Run(() => _registrySettingService.WriteDword(
+                new RegistryValue(RegistryHive.LocalMachine, RdpFlagPath, RdpFlagName), on ? 1 : 0));
             LastError = $"Failed to set {TermServiceName} start mode to {mode}.";
+            OnPropertyChanged(nameof(RdpOn));
             return;
         }
 
         // Immediate effect: start/stop the running service to match (spec §12.7).
+        // RdpOn follows the flag (spec §12.1), which was set, so the switch
+        // stays even when the running state lags; LastError says so.
         var runningOk = on
             ? await Task.Run(() => _serviceControl.StartService(TermServiceName))
             : await Task.Run(() => _serviceControl.StopService(TermServiceName));

@@ -190,4 +190,54 @@ public sealed class GeneralViewModelTests
         Assert.NotNull(vm.LastError);
         _serviceControl.Verify(s => s.SetStartMode(It.IsAny<string>(), It.IsAny<ServiceStartMode>()), Times.Never);
     }
+
+    [Fact]
+    public async Task Set_SameValue_SkipsWrite()
+    {
+        // Revert echoes (the switch snapping back after a failed apply) carry
+        // the value already shown and must not write. The view binds OneWay,
+        // so a user toggle always reaches here with a differing value.
+        _bcd.Setup(b => b.Set(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+
+        var vm = CreateViewModel();
+        await vm.SetHyperVAsync(false);
+
+        _bcd.Verify(b => b.Set(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SetHyperV_Failure_ForcesRevertNotification()
+    {
+        // OneWay binding: the switch keeps the user's flipped state until the
+        // VM pushes back. On failure the VM must raise a notification even
+        // though the value is unchanged, or the switch lies.
+        _bcd.Setup(b => b.Set(It.IsAny<string>(), It.IsAny<string>())).Returns(false);
+
+        var vm = CreateViewModel();
+        var notified = new List<string?>();
+        vm.PropertyChanged += (_, e) => notified.Add(e.PropertyName);
+
+        await vm.SetHyperVAsync(true);
+
+        Assert.False(vm.HyperVOn);
+        Assert.Contains(nameof(GeneralViewModel.HyperVOn), notified);
+    }
+
+    [Fact]
+    public async Task SetRdp_ModeFailure_RollsBackFlag()
+    {
+        // The flag is written first; if the service mode then fails, the flag
+        // must be restored so the machine never disagrees with the display.
+        _registry.Setup(r => r.WriteDword(It.IsAny<RegistryValue>(), It.IsAny<int>())).Returns(true);
+        _serviceControl.Setup(s => s.SetStartMode(It.IsAny<string>(), It.IsAny<ServiceStartMode>())).Returns(false);
+
+        var vm = CreateViewModel();
+        await vm.SetRdpAsync(true);
+
+        _registry.Verify(r => r.WriteDword(RdpFlag(), 0), Times.Once);
+        _registry.Verify(r => r.WriteDword(RdpFlag(), 1), Times.Once);
+        Assert.False(vm.RdpOn);
+        Assert.NotNull(vm.LastError);
+        _serviceControl.Verify(s => s.StartService(It.IsAny<string>()), Times.Never);
+    }
 }

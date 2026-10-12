@@ -52,7 +52,7 @@ public sealed class SettingsVisibilityViewModelTests
     }
 
     [Fact]
-    public async Task Toggle_ShowPage_WritesHideUri()
+    public async Task SetHidden_ShowPage_WritesHideUri()
     {
         string? writtenValue = null;
         var registry = new Mock<IRegistrySettingService>();
@@ -72,15 +72,17 @@ public sealed class SettingsVisibilityViewModelTests
         var display = vm.Pages.First(p => p.Name == "Display");
         Assert.False(display.IsHidden);
 
-        // Toggle flips IsHidden to true, then writes the hide: URI.
-        await vm.ToggleCommand.ExecuteAsync(display);
+        // The view passes the switch's requested value (OneWay binding never
+        // pushes, so the VM must SET, not flip).
+        await vm.SetHiddenAsync(display, true);
 
+        Assert.True(display.IsHidden);
         Assert.NotNull(writtenValue);
         Assert.Contains("ms-settings:display", writtenValue);
     }
 
     [Fact]
-    public async Task Toggle_UnhidePage_RemovesUri()
+    public async Task SetHidden_UnhidePage_RemovesUri()
     {
         string? writtenValue = null;
         var registry = new Mock<IRegistrySettingService>();
@@ -101,21 +103,19 @@ public sealed class SettingsVisibilityViewModelTests
         var bluetooth = vm.Pages.First(p => p.Name == "Bluetooth & devices");
         Assert.True(bluetooth.IsHidden);
 
-        // Toggle flips IsHidden from true to false (unhide), then writes without bluetooth.
-        await vm.ToggleCommand.ExecuteAsync(bluetooth);
+        await vm.SetHiddenAsync(bluetooth, false);
 
+        Assert.False(bluetooth.IsHidden);
         Assert.NotNull(writtenValue);
         Assert.DoesNotContain("ms-settings:bluetooth", writtenValue);
         Assert.Contains("ms-settings:gaming", writtenValue);
     }
 
     [Fact]
-    public async Task Toggle_Failure_RevertsState()
+    public async Task SetHidden_SameValue_SkipsWrite()
     {
         var registry = new Mock<IRegistrySettingService>();
         registry.Setup(r => r.ReadString(It.IsAny<RegistryValue>())).Returns("");
-        registry.Setup(r => r.WriteString(It.IsAny<RegistryValue>(), It.IsAny<string>()))
-            .Throws(new InvalidOperationException("Registry write failed"));
 
         var vm = new SettingsVisibilityViewModel(registry.Object);
         await vm.LoadAsync();
@@ -123,10 +123,33 @@ public sealed class SettingsVisibilityViewModelTests
         var system = vm.Pages.First(p => p.Name == "System");
         Assert.False(system.IsHidden);
 
-        system.IsHidden = true;
-        await vm.ToggleCommand.ExecuteAsync(system);
+        // Revert echoes (the switch snapping back after a failed apply) carry
+        // the value already shown and must not write.
+        await vm.SetHiddenAsync(system, false);
+
+        registry.Verify(r => r.WriteString(It.IsAny<RegistryValue>(), It.IsAny<string>()), Times.Never);
+        Assert.False(vm.IsApplying);
+    }
+
+    [Fact]
+    public async Task SetHidden_Failure_RevertsState()
+    {
+        var registry = new Mock<IRegistrySettingService>();
+        registry.Setup(r => r.ReadString(It.IsAny<RegistryValue>())).Returns("");
+        // The real service returns false instead of throwing on denied writes.
+        registry.Setup(r => r.WriteString(It.IsAny<RegistryValue>(), It.IsAny<string>()))
+            .Returns(false);
+
+        var vm = new SettingsVisibilityViewModel(registry.Object);
+        await vm.LoadAsync();
+
+        var system = vm.Pages.First(p => p.Name == "System");
+        Assert.False(system.IsHidden);
+
+        await vm.SetHiddenAsync(system, true);
 
         // Reverted to pre-toggle state after the failure.
-        Assert.True(system.IsHidden);
+        Assert.False(system.IsHidden);
+        Assert.False(vm.IsApplying);
     }
 }

@@ -37,6 +37,21 @@ public sealed class ExplorerViewModelTests
     }
 
     [Fact]
+    public async Task TaskbarDaRow_LabelsWidgetsBoard()
+    {
+        // TaskbarDa is the Widgets board toggle: the label must name the
+        // behavior the key actually controls, not multi-monitor taskbar.
+        var registry = new Mock<IRegistrySettingService>();
+        registry.Setup(r => r.ReadDword(It.IsAny<RegistryValue>())).Returns(0);
+
+        var vm = new ExplorerViewModel(registry.Object);
+        await vm.LoadAsync();
+
+        var row = vm.Rows.First(r => r.Setting.Id == "TaskbarDa");
+        Assert.Equal("Widgets board", row.Label);
+    }
+
+    [Fact]
     public async Task Load_MapsDwordState()
     {
         var registry = new Mock<IRegistrySettingService>();

@@ -33,7 +33,10 @@ public sealed partial class DateTimeViewModel : ObservableObject
     [ObservableProperty]
     private string? _errorMessage;
 
+    // WinUI has no CommandManager auto-requery: ApplyCommand.CanExecute is
+    // only re-evaluated when notified (collection changes, load, apply).
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ApplyCommand))]
     private bool _isApplying;
 
     public DateTimeViewModel(
@@ -42,6 +45,7 @@ public sealed partial class DateTimeViewModel : ObservableObject
     {
         _registrySettingService = registrySettingService;
         _serviceControl = serviceControl;
+        NtpServers.CollectionChanged += (_, _) => ApplyCommand.NotifyCanExecuteChanged();
     }
 
     public async Task LoadAsync()
@@ -59,6 +63,7 @@ public sealed partial class DateTimeViewModel : ObservableObject
                     NtpServers.Add(entry.Trim());
             }
         }
+        ApplyCommand.NotifyCanExecuteChanged();
     }
 
     [RelayCommand(CanExecute = nameof(CanAddServer))]
@@ -68,16 +73,22 @@ public sealed partial class DateTimeViewModel : ObservableObject
 
         var trimmed = NewServer?.Trim() ?? string.Empty;
 
-        // Validation (Review Focus #3): reject empty or whitespace-containing input.
-        if (string.IsNullOrWhiteSpace(trimmed) || trimmed.Contains(' '))
+        // Validation (Review Focus #3): reject empty, any-whitespace,
+        // empty-host, malformed-flag, or duplicate entries before staging.
+        if (string.IsNullOrWhiteSpace(trimmed) || trimmed.Any(char.IsWhiteSpace))
         {
             ErrorMessage = "Enter a valid host name (e.g. time.windows.com).";
             return;
         }
 
         // Optional flag format: host,0xflag (e.g. time.windows.com,0x9).
-        // Reject if present but malformed.
         var parts = trimmed.Split(',', 2);
+        var host = parts[0].Trim();
+        if (string.IsNullOrEmpty(host))
+        {
+            ErrorMessage = "Enter a valid host name (e.g. time.windows.com).";
+            return;
+        }
         if (parts.Length == 2)
         {
             var flag = parts[1].Trim();
@@ -90,8 +101,21 @@ public sealed partial class DateTimeViewModel : ObservableObject
             }
         }
 
+        if (NtpServers.Any(s => s.Equals(trimmed, StringComparison.OrdinalIgnoreCase)))
+        {
+            ErrorMessage = "That server is already in the list.";
+            return;
+        }
+
         NtpServers.Add(trimmed);
         NewServer = string.Empty;
+    }
+
+    [RelayCommand]
+    private void RemoveServer(string? server)
+    {
+        if (!string.IsNullOrEmpty(server))
+            NtpServers.Remove(server);
     }
 
     private bool CanAddServer()
@@ -109,16 +133,29 @@ public sealed partial class DateTimeViewModel : ObservableObject
         {
             // Write the joined value to the registry.
             var joined = string.Join(" ", NtpServers);
-            await Task.Run(() => _registrySettingService.WriteString(
+            var wrote = await Task.Run(() => _registrySettingService.WriteString(
                 new RegistryValue(RegistryHive.LocalMachine, W32TimeParametersPath, NtpServerName),
                 joined));
+            if (!wrote)
+            {
+                ErrorMessage = "Failed to write NTP servers (administrator rights required).";
+                return;
+            }
 
             // Apply via w32tm.
             RunW32TmConfigUpdate();
 
-            // Restart W32Time to pick up the change.
-            await Task.Run(() => _serviceControl.StopService(W32TimeServiceName));
-            await Task.Run(() => _serviceControl.StartService(W32TimeServiceName));
+            // Restart W32Time to pick up the change; every bool is checked so
+            // a refused stop/start surfaces instead of reporting success.
+            var stopped = await Task.Run(() => _serviceControl.StopService(W32TimeServiceName));
+            if (!stopped)
+            {
+                ErrorMessage = $"NTP servers written, but the {W32TimeServiceName} service could not be stopped.";
+                return;
+            }
+            var started = await Task.Run(() => _serviceControl.StartService(W32TimeServiceName));
+            if (!started)
+                ErrorMessage = $"NTP servers written, but the {W32TimeServiceName} service could not be started.";
         }
         catch (Exception ex)
         {

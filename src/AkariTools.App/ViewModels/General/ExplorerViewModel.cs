@@ -51,11 +51,13 @@ public sealed class ExplorerViewModel
             OffValue = 0,
         },
         // Source: HKCU\...\Explorer\Advanced\TaskbarDa (DWORD, 1 = on, Windows 11).
+        // This is the Widgets board toggle — labeled honestly (was: "Show
+        // taskbar on all displays", which names a different setting).
         new()
         {
             Id = "TaskbarDa",
-            Label = "Show taskbar on all displays",
-            Description = "Show a taskbar on every monitor (Windows 11).",
+            Label = "Widgets board",
+            Description = "Show or hide the Widgets board (TaskbarDa, Windows 11).",
             Kind = ToggleKind.Dword,
             ValueKey = new RegistryValue(RegistryHive.CurrentUser, AdvancedPath, "TaskbarDa"),
             OnValue = 1,

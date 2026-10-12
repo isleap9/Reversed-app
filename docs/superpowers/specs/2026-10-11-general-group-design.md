@@ -106,7 +106,7 @@ Four section toggles with immediate effect + status text:
 | Hyper-V | `bcdedit /set hypervisorlaunchtype auto` (off = `off`); read via `/enum` |
 | Print Spooler | Service `Spooler` start mode (auto/disabled) |
 | Remote Desktop | Service `TermService` start mode + `fDenyTSConnections` |
-| LPC controller | Original's `LpcController_Changed`; exact backend is builder's call (see §9) |
+| LPC controller | DROPPED from this slice (ledger ruling): the evidence names the original's `LpcController_Changed` handler but no verifiable backend, and a fake backend violates behavior-first. Returns with evidence in a later slice. |
 
 ### 7.2 Explorer
 

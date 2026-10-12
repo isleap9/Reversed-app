@@ -23,11 +23,15 @@ public sealed partial class SettingsVisibilityPage : Page
 
     private async void ToggleSwitch_Toggled(object sender, RoutedEventArgs e)
     {
-        if (ViewModel is null || sender is not ToggleSwitch toggle)
+        // OneWay binding: the row still holds the previous value when a user
+        // toggle fires, so the switch value is passed explicitly. Revert
+        // echoes (the switch snapping back after a failed apply) carry the
+        // value already shown and are ignored.
+        if (ViewModel is null || sender is not ToggleSwitch toggle
+            || toggle.DataContext is not SettingsPageRow row
+            || toggle.IsOn == row.IsHidden)
             return;
 
-        // Find the row from the DataContext of the toggle.
-        if (toggle.DataContext is SettingsPageRow row)
-            await ViewModel.ToggleCommand.ExecuteAsync(row);
+        await ViewModel.SetHiddenAsync(row, toggle.IsOn);
     }
 }

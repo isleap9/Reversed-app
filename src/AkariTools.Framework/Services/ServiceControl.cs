@@ -80,6 +80,9 @@ public sealed class ServiceControl : IServiceControl
             if (controller.Status == ServiceControllerStatus.Running)
                 return true;
             controller.Start();
+            // Wait for the transition: returning true must mean running, so a
+            // service that refuses to start reports failure (Review Focus #4).
+            controller.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(10));
             return true;
         }
         catch
@@ -96,6 +99,9 @@ public sealed class ServiceControl : IServiceControl
             if (controller.Status == ServiceControllerStatus.Stopped)
                 return true;
             controller.Stop();
+            // Wait for the transition: a service that hangs or refuses to
+            // stop reports failure instead of hanging the caller forever.
+            controller.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(10));
             return true;
         }
         catch
