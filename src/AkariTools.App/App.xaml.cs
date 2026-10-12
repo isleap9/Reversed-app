@@ -33,6 +33,9 @@ public partial class App : Application
                     services.AddSingleton<IHardwareService, HardwareService>();
                     services.AddSingleton<IRegistrySettingService, RegistrySettingService>();
                     services.AddSingleton<IServiceControl, ServiceControl>();
+                    services.AddSingleton<ICliRunner, CliRunner>();
+                    services.AddSingleton<IDateFormatService, DateFormatService>();
+                    services.AddSingleton<ITimeZoneService, TimeZoneService>();
                 })
                 .Build();
             LaunchLog.Write("Host built");
@@ -63,9 +66,12 @@ public partial class App : Application
             var themeService = Host.Services.GetRequiredService<IThemeService>();
             var registrySettingService = Host.Services.GetRequiredService<IRegistrySettingService>();
             var serviceControl = Host.Services.GetRequiredService<IServiceControl>();
+            var dateFormatService = Host.Services.GetRequiredService<IDateFormatService>();
+            var timeZoneService = Host.Services.GetRequiredService<ITimeZoneService>();
+            var cliRunner = Host.Services.GetRequiredService<ICliRunner>();
             LaunchLog.Write("Services resolved");
 
-            MainWindow = new MainWindow(hardwareService, themeService, registrySettingService, serviceControl);
+            MainWindow = new MainWindow(hardwareService, themeService, registrySettingService, serviceControl, dateFormatService, timeZoneService, cliRunner);
             LaunchLog.Write("MainWindow created");
             MainWindow.Closed += (_, _) =>
             {

@@ -1,6 +1,6 @@
 using AkariTools.App.Helpers;
 using AkariTools.App.Views;
-using AkariTools.App.Views.General;
+using AkariTools.App.Views.System;
 using AkariTools.Framework.Models;
 using AkariTools.Framework.Services;
 using Microsoft.UI.Xaml;
@@ -14,6 +14,9 @@ public sealed partial class MainWindow : Window
     private readonly IThemeService _themeService;
     private readonly IRegistrySettingService _registrySettingService;
     private readonly IServiceControl _serviceControl;
+    private readonly IDateFormatService _dateFormatService;
+    private readonly ITimeZoneService _timeZoneService;
+    private readonly ICliRunner _cliRunner;
 
     private readonly Dictionary<string, Page> _pageCache = new(StringComparer.Ordinal);
     private readonly Func<string, Page?> _pageFactory;
@@ -22,7 +25,10 @@ public sealed partial class MainWindow : Window
         IHardwareService hardwareService,
         IThemeService themeService,
         IRegistrySettingService registrySettingService,
-        IServiceControl serviceControl)
+        IServiceControl serviceControl,
+        IDateFormatService dateFormatService,
+        ITimeZoneService timeZoneService,
+        ICliRunner cliRunner)
     {
         LaunchLog.Write("MainWindow ctor start");
         this.InitializeComponent();
@@ -34,6 +40,9 @@ public sealed partial class MainWindow : Window
         _themeService = themeService;
         _registrySettingService = registrySettingService;
         _serviceControl = serviceControl;
+        _dateFormatService = dateFormatService;
+        _timeZoneService = timeZoneService;
+        _cliRunner = cliRunner;
 
         _pageFactory = CreatePage;
 
@@ -70,12 +79,13 @@ public sealed partial class MainWindow : Window
         "Home" => new HomePage(_hardwareService, _themeService),
         // IBcdService is not in the MainWindow ctor (App.xaml.cs wiring is owned by a
         // later task); BcdService is stateless, so construct it inline here.
-        "General" => new GeneralPage(_serviceControl, new BcdService(), _registrySettingService),
-        "Explorer" => new ExplorerPage(_registrySettingService),
-        "Visual" => new VisualPage(_registrySettingService),
-        "ContextMenu" => new ContextMenuPage(_registrySettingService),
-        "DateTime" => new DateTimePage(_registrySettingService, _serviceControl),
-        "SettingsVisibility" => new SettingsVisibilityPage(_registrySettingService),
+        "System" => new SystemPage(
+            _registrySettingService,
+            _serviceControl,
+            new BcdService(),
+            _dateFormatService,
+            _timeZoneService,
+            _cliRunner),
         _ => null,
     };
 
