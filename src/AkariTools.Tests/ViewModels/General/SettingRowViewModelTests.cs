@@ -81,4 +81,62 @@ public sealed class SettingRowViewModelTests
         Assert.False(vm.IsOn);
         Assert.False(vm.IsApplying);
     }
+
+    private static ToggleSetting KeyValuesSetting() => new()
+    {
+        Id = "TestKeyValues",
+        Label = "Test key-values toggle",
+        Description = "Test description.",
+        Kind = ToggleKind.KeyValues,
+        ValueKey = new RegistryValue(RegistryHive.CurrentUser, TestPath, TestName),
+        Probe = new RegistryValue(RegistryHive.CurrentUser, TestPath, "Probe"),
+        Writes = new List<RegistryStringWrite>
+        {
+            new(new RegistryValue(RegistryHive.CurrentUser, TestPath, "A"), "a"),
+            new(new RegistryValue(RegistryHive.CurrentUser, TestPath, "B"), "%x%", ExpandString: true),
+        },
+        Deletes = new List<RegistryValue>
+        {
+            new(RegistryHive.CurrentUser, TestPath, string.Empty),
+        },
+    };
+
+    [Fact]
+    public async Task KeyValues_Load_MapsProbe()
+    {
+        var registry = new Mock<IRegistrySettingService>();
+        registry.Setup(r => r.ReadString(It.Is<RegistryValue>(v => v.Name == "Probe"))).Returns("x");
+
+        var vm = new SettingRowViewModel(KeyValuesSetting(), registry.Object);
+        await vm.LoadAsync();
+
+        Assert.True(vm.IsOn);
+    }
+
+    [Fact]
+    public async Task KeyValues_Set_WritesThenDeletes()
+    {
+        var registry = new Mock<IRegistrySettingService>();
+        var probe = (string?)null;
+        registry.Setup(r => r.ReadString(It.Is<RegistryValue>(v => v.Name == "Probe"))).Returns(() => probe);
+
+        var vm = new SettingRowViewModel(KeyValuesSetting(), registry.Object);
+        await vm.LoadAsync();
+        Assert.False(vm.IsOn);
+
+        await vm.SetAsync(true);
+
+        registry.Verify(r => r.WriteString(
+            It.Is<RegistryValue>(v => v.Name == "A"), "a"), Times.Once);
+        registry.Verify(r => r.WriteExpandString(
+            It.Is<RegistryValue>(v => v.Name == "B"), "%x%"), Times.Once);
+
+        probe = "x";
+        await vm.LoadAsync();
+        Assert.True(vm.IsOn);
+
+        await vm.SetAsync(false);
+
+        registry.Verify(r => r.DeleteKey(RegistryHive.CurrentUser, TestPath), Times.Once);
+    }
 }

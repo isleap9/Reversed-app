@@ -11,10 +11,18 @@ public sealed class ToggleSetting
     public int OffValue { get; set; }
 
     /// <summary>
-    /// Optional second key for rows that must toggle together (e.g. the
-    /// classic context menu row writes two CLSID InprocServer32 keys).
-    /// When set, <see cref="Kind"/> must be <see cref="ToggleKind.KeyPresence"/>
-    /// and both keys are created/deleted as a pair.
+    /// KeyValues rows only: the string value whose non-null read means On.
     /// </summary>
-    public RegistryValue? SecondaryValueKey { get; set; }
+    public RegistryValue? Probe { get; set; }
+
+    /// <summary>
+    /// KeyValues rows only: string writes applied when enabling.
+    /// </summary>
+    public List<RegistryStringWrite>? Writes { get; set; }
+
+    /// <summary>
+    /// KeyValues rows only: key trees deleted when disabling
+    /// (<see cref="RegistryValue.Name"/> is ignored).
+    /// </summary>
+    public List<RegistryValue>? Deletes { get; set; }
 }

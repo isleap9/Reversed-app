@@ -99,9 +99,11 @@ public partial class SettingRowViewModel : ObservableObject
         {
             // Dword: On when the stored value equals OnValue; absent (null) = Off.
             ToggleKind.Dword => _registrySettingService.ReadDword(_setting.ValueKey) == _setting.OnValue,
-            // KeyPresence: On when the key exists. When SecondaryValueKey is
-            // set, both keys must exist for the row to show On.
-            ToggleKind.KeyPresence => KeyExistsWithSecondary(_setting.ValueKey),
+            // KeyPresence: On when the key exists.
+            ToggleKind.KeyPresence => _registrySettingService.KeyExists(_setting.ValueKey.Hive, _setting.ValueKey.Path),
+            // KeyValues: On when the probe string reads non-null.
+            ToggleKind.KeyValues => _setting.Probe is not null
+                && _registrySettingService.ReadString(_setting.Probe) is not null,
             _ => false
         };
     }
@@ -112,29 +114,34 @@ public partial class SettingRowViewModel : ObservableObject
         {
             _registrySettingService.WriteDword(_setting.ValueKey, on ? _setting.OnValue : _setting.OffValue);
         }
-        else
+        else if (_setting.Kind == ToggleKind.KeyValues)
         {
             if (on)
             {
-                _registrySettingService.CreateKey(_setting.ValueKey.Hive, _setting.ValueKey.Path);
-                if (_setting.SecondaryValueKey is { } secondary)
-                    _registrySettingService.CreateKey(secondary.Hive, secondary.Path);
+                if (_setting.Writes is null)
+                    return;
+                foreach (var write in _setting.Writes)
+                {
+                    if (write.ExpandString)
+                        _registrySettingService.WriteExpandString(write.Value, write.Data);
+                    else
+                        _registrySettingService.WriteString(write.Value, write.Data);
+                }
             }
             else
             {
-                _registrySettingService.DeleteKey(_setting.ValueKey.Hive, _setting.ValueKey.Path);
-                if (_setting.SecondaryValueKey is { } secondary)
-                    _registrySettingService.DeleteKey(secondary.Hive, secondary.Path);
+                if (_setting.Deletes is null)
+                    return;
+                foreach (var delete in _setting.Deletes)
+                    _registrySettingService.DeleteKey(delete.Hive, delete.Path);
             }
         }
-    }
-
-    private bool KeyExistsWithSecondary(RegistryValue key)
-    {
-        if (!_registrySettingService.KeyExists(key.Hive, key.Path))
-            return false;
-        if (_setting.SecondaryValueKey is { } secondary)
-            return _registrySettingService.KeyExists(secondary.Hive, secondary.Path);
-        return true;
+        else
+        {
+            if (on)
+                _registrySettingService.CreateKey(_setting.ValueKey.Hive, _setting.ValueKey.Path);
+            else
+                _registrySettingService.DeleteKey(_setting.ValueKey.Hive, _setting.ValueKey.Path);
+        }
     }
 }

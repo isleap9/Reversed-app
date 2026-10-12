@@ -34,6 +34,15 @@ public sealed class RegistrySettingServiceTests : IDisposable
     }
 
     [Fact]
+    public void ExpandString_RoundTripsThroughRegistry()
+    {
+        var value = new RegistryValue(RegistryHive.CurrentUser, _keyPath, "ExpandValue");
+
+        Assert.True(_service.WriteExpandString(value, @"%systemroot%\System32\acppage.dll,-6002"));
+        Assert.Equal(@"%systemroot%\System32\acppage.dll,-6002", _service.ReadString(value));
+    }
+
+    [Fact]
     public void MissingKey_ReturnsNull()
     {
         var value = new RegistryValue(RegistryHive.CurrentUser, _keyPath, "NoSuchValue");
@@ -62,5 +71,6 @@ public sealed class RegistrySettingServiceTests : IDisposable
 
         Assert.False(_service.WriteDword(bad, 1));
         Assert.False(_service.WriteString(bad, "x"));
+        Assert.False(_service.WriteExpandString(bad, "x"));
     }
 }

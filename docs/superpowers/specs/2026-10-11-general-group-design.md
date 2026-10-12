@@ -240,3 +240,24 @@ A builder review of this spec asked 11 questions; all resolved here:
 11. **HKLM/HKCR tests**: registry service takes an injectable base path like
     `ThemeService` (unit tests redirect under HKCU throwaway keys);
     ViewModel tests use mocked services; no test touches real HKLM/HKCR.
+
+---
+
+## 13. Context Menu Binary Evidence (SUPERSEDES §7.3 row table + §12.5)
+
+Decompiled `Vain\Vain Toolbox.exe` via REA/Ghidra 2026-10-11. The original
+Context Menu page has SEVEN toggles (not the two-CLSID sketch in §7.3), each
+writing a multi-key value set. Framework models this with
+`ToggleKind.KeyValues` + `ToggleSetting.Probe/Writes/Deletes` +
+`IRegistrySettingService.WriteExpandString`. PROJECT.md §3.6 GUIDs corrected
+accordingly (the adapter CLSID is `{6480100b-…}`, not `{6480400b-…}`).
+
+| # | Id / Label | Probe (string read non-null ⇒ On) | Writes on enable | Deletes on disable |
+|---|------------|-----------------------------------|------------------|--------------------|
+| 1 | `ModernMenu` / "Modern Context Menu" | `HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32` default | same value, REG_SZ empty | `{86ca1aa0-…}` tree |
+| 2 | `TakeOwnership` / "Take Ownership" | `HKCR\Directory\shell\runas` default | default=`Take Ownership`, `HasLUAShield`="", `NoWorkingDirectory`="", `command` default + `IsolatedCommand`=`cmd.exe /c takeown /f "%1" /r /d y && icacls "%1" /grant *S-1-5-32-544:F /t` | `Directory\shell\runas` tree |
+| 3 | `SendTo` / "Send To" | `HKCR\AllFilesystemObjects\shellex\ContextMenuHandlers\SendTo` default | default=`{7BA4C740-9E81-11CF-99D3-00AA004AE837}` at that path AND `HKCR\UserLibraryFolder\shellex\ContextMenuHandlers\SendTo` | both trees |
+| 4 | `NewPs1` / "New Windows PowerShell Script" | `HKCR\.ps1\ShellNew` `NullFile` | `HKCR\.ps1` default=`Microsoft.PowerShellScript.1`, `HKCR\.ps1\ShellNew` `NullFile`="", `HKCR\Microsoft.PowerShellScript.1` default + `FriendlyTypeName`=`Windows PowerShell Script` | `HKCR\.ps1\ShellNew` ONLY |
+| 5 | `NewBat` / "New Batch File" | `HKCR\.bat\ShellNew` `NullFile` | `NullFile`="" (REG_SZ), `ItemName`=`%systemroot%\System32\acppage.dll,-6002` (REG_EXPAND_SZ) | `HKCR\.bat\ShellNew` |
+| 6 | `NewReg` / "New Registry File" | `HKCR\.reg\ShellNew` `NullFile` | `NullFile`="" (REG_SZ), `ItemName`=`%systemroot%\regedit.exe,-309` (REG_EXPAND_SZ) | `HKCR\.reg\ShellNew` |
+| 7 | `ModernViews` / "Modern File Explorer Views" | `HKCU\Software\Classes\CLSID\{2aa9162e-c906-4dd9-ad0b-3d24a8eef5a0}` default | per-CLSID triple (default + `InprocServer32` default + `ThreadingModel`=`Apartment`) for `{2aa9162e-…}` and `{6480100b-…}` | both trees |

@@ -48,7 +48,9 @@ public sealed class RegistrySettingService : IRegistrySettingService
         try
         {
             using var key = OpenHive(value.Hive).OpenSubKey(value.Path);
-            return key?.GetValue(value.Name) as string;
+            // DoNotExpandEnvironmentNames: REG_EXPAND_SZ must read back exactly
+            // as stored (ContextMenu ShellNew ItemName), not %...%-expanded.
+            return key?.GetValue(value.Name, null, RegistryValueOptions.DoNotExpandEnvironmentNames) as string;
         }
         catch
         {
@@ -64,6 +66,22 @@ public sealed class RegistrySettingService : IRegistrySettingService
             if (key is null)
                 return false;
             key.SetValue(value.Name, data, RegistryValueKind.String);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public bool WriteExpandString(RegistryValue value, string data)
+    {
+        try
+        {
+            using var key = OpenHive(value.Hive).CreateSubKey(value.Path);
+            if (key is null)
+                return false;
+            key.SetValue(value.Name, data, RegistryValueKind.ExpandString);
             return true;
         }
         catch

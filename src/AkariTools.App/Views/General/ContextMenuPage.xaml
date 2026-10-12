@@ -6,8 +6,8 @@
     xmlns:vm="using:AkariTools.App.ViewModels.General"
     Loaded="Page_Loaded">
 
-    <!-- Context Menu page: data-driven rows over shell extension registry keys
-         (spec §7.3). IsOn binds OneWay and user toggles flow through the
+    <!-- Context Menu page: data-driven KeyValues rows over shell extension registry keys
+         (spec §13). IsOn binds OneWay and user toggles flow through the
          ToggleCommand DP — a TwoWay binding would push IsOn to the VM
          before the command runs and trip the VM's same-value guard. -->
     <Grid>
@@ -24,7 +24,7 @@
                     FontWeight="Bold"
                     Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
                 <TextBlock
-                    Text="Toggle shell context-menu handlers and ShellNew entries."
+                    Text="HKCR writes require the app's administrator elevation; some changes need an Explorer restart to take effect."
                     FontSize="13"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
 
@@ -38,6 +38,7 @@
                                 Label="{x:Bind Label, Mode=OneWay}"
                                 Description="{x:Bind Description, Mode=OneWay}"
                                 IsOn="{x:Bind IsOn, Mode=OneWay}"
+                                IsApplying="{x:Bind IsApplying, Mode=OneWay}"
                                 ToggleCommand="{x:Bind SetCommand, Mode=OneWay}"
                                 Margin="0,0,0,8" />
                         </DataTemplate>

@@ -6,148 +6,209 @@ using Xunit;
 
 namespace AkariTools.Tests.ViewModels.General;
 
+// Context Menu page: seven KeyValues rows over shell extension registry keys
+// (task-7 brief, binary evidence 2026-10-11). Each row probes one string
+// value for state and writes a value set on enable / deletes key trees on
+// disable. Key paths pinned here to catch wrong-path bugs.
 public sealed class ContextMenuViewModelTests
 {
-    // Key paths from spec §7.3 — pinned here to catch wrong-path bugs.
-    private const string TakeOwnershipPath = @"Directory\shell\runas";
-    private const string SendToPath = @"AllFilesystemObjects\shellex\ContextMenuHandlers\SendTo";
-    private const string ShellNewPs1Path = @".ps1\ShellNew";
-    private const string ShellNewBatPath = @".bat\ShellNew";
-    private const string ShellNewRegPath = @".reg\ShellNew";
-    private const string ClassicMenuKey1Path =
+    private const string ModernMenuProbePath =
         @"Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32";
-    private const string ClassicMenuKey2Path =
-        @"Software\Classes\CLSID\{6480400b-5a83-4d1e-9f69-8ae5a8eef5a0}\InprocServer32";
+    private const string TakeOwnershipPath = @"Directory\shell\runas";
+    private const string TakeOwnershipCommandPath = @"Directory\shell\runas\command";
+    private const string SendToPath = @"AllFilesystemObjects\shellex\ContextMenuHandlers\SendTo";
+    private const string UserLibrarySendToPath = @"UserLibraryFolder\shellex\ContextMenuHandlers\SendTo";
+    private const string Ps1ShellNewPath = @".ps1\ShellNew";
+    private const string BatShellNewPath = @".bat\ShellNew";
+    private const string RegShellNewPath = @".reg\ShellNew";
+    private const string ViewsKey1 = @"Software\Classes\CLSID\{2aa9162e-c906-4dd9-ad0b-3d24a8eef5a0}";
+    private const string ViewsKey2 = @"Software\Classes\CLSID\{6480100b-5a83-4d1e-9f69-8ae5a88e9a33}";
 
-    [Fact]
-    public async Task Load_BuildsExpectedRows()
+    private const string TakeOwnershipCommand =
+        "cmd.exe /c takeown /f \"%1\" /r /d y && icacls \"%1\" /grant *S-1-5-32-544:F /t";
+
+    private static Mock<IRegistrySettingService> QuietRegistry()
     {
         var registry = new Mock<IRegistrySettingService>();
-        registry.Setup(r => r.KeyExists(It.IsAny<RegistryHive>(), It.IsAny<string>())).Returns(false);
+        registry.Setup(r => r.ReadString(It.IsAny<RegistryValue>())).Returns((string?)null);
+        return registry;
+    }
 
-        var vm = new ContextMenuViewModel(registry.Object);
+    [Fact]
+    public async Task Load_BuildsSevenRows()
+    {
+        var vm = new ContextMenuViewModel(QuietRegistry().Object);
         await vm.LoadAsync();
 
-        Assert.Equal(6, vm.Rows.Count);
+        Assert.Equal(7, vm.Rows.Count);
         Assert.Equal(
-            new[] { "TakeOwnership", "SendTo", "ShellNewPs1", "ShellNewBat", "ShellNewReg", "ClassicMenu" },
+            new[] { "ModernMenu", "TakeOwnership", "SendTo", "NewPs1", "NewBat", "NewReg", "ModernViews" },
             vm.Rows.Select(r => r.Setting.Id));
 
-        // All rows are KeyPresence (spec §7.3).
+        // All rows are KeyValues (task-7 brief).
         foreach (var row in vm.Rows)
-            Assert.Equal(ToggleKind.KeyPresence, row.Setting.Kind);
+            Assert.Equal(ToggleKind.KeyValues, row.Setting.Kind);
     }
 
     [Fact]
-    public async Task Load_MapsKeyPresence()
+    public async Task Load_MapsProbeState()
     {
-        var registry = new Mock<IRegistrySettingService>();
-        // Take Ownership and Send To keys exist; others do not.
-        registry.Setup(r => r.KeyExists(RegistryHive.ClassesRoot, TakeOwnershipPath)).Returns(true);
-        registry.Setup(r => r.KeyExists(RegistryHive.ClassesRoot, SendToPath)).Returns(true);
+        var registry = QuietRegistry();
+        // Probes returning non-null (even empty string) mean On; null means Off.
+        registry.Setup(r => r.ReadString(It.Is<RegistryValue>(
+                v => v.Hive == RegistryHive.ClassesRoot && v.Path == TakeOwnershipPath && v.Name == "")))
+            .Returns("");
+        registry.Setup(r => r.ReadString(It.Is<RegistryValue>(
+                v => v.Hive == RegistryHive.CurrentUser && v.Path == ModernMenuProbePath && v.Name == "")))
+            .Returns("present");
 
         var vm = new ContextMenuViewModel(registry.Object);
         await vm.LoadAsync();
 
-        Assert.True(vm.Rows[0].IsOn);   // TakeOwnership
-        Assert.True(vm.Rows[1].IsOn);   // SendTo
-        Assert.False(vm.Rows[2].IsOn);  // ShellNewPs1
-        Assert.False(vm.Rows[3].IsOn);  // ShellNewBat
-        Assert.False(vm.Rows[4].IsOn);  // ShellNewReg
-        Assert.False(vm.Rows[5].IsOn);  // ClassicMenu
-    }
-
-    [Fact]
-    public async Task ClassicMenu_SecondaryKeyRequired()
-    {
-        // ClassicMenu row: both keys must exist for IsOn=true (spec §12.5).
-        var registry = new Mock<IRegistrySettingService>();
-        registry.Setup(r => r.KeyExists(RegistryHive.CurrentUser, ClassicMenuKey1Path)).Returns(true);
-        // SecondaryKey (key2) does not exist — row must be Off.
-
-        var vm = new ContextMenuViewModel(registry.Object);
-        await vm.LoadAsync();
-
-        Assert.False(vm.Rows[5].IsOn);  // ClassicMenu: only one key exists
-    }
-
-    [Fact]
-    public async Task ClassicMenu_BothKeysExist_IsOn()
-    {
-        var registry = new Mock<IRegistrySettingService>();
-        registry.Setup(r => r.KeyExists(RegistryHive.CurrentUser, ClassicMenuKey1Path)).Returns(true);
-        registry.Setup(r => r.KeyExists(RegistryHive.CurrentUser, ClassicMenuKey2Path)).Returns(true);
-
-        var vm = new ContextMenuViewModel(registry.Object);
-        await vm.LoadAsync();
-
-        Assert.True(vm.Rows[5].IsOn);  // ClassicMenu: both keys exist
+        Assert.True(vm.Rows[0].IsOn);   // ModernMenu: probe non-null
+        Assert.True(vm.Rows[1].IsOn);   // TakeOwnership: probe empty-string (non-null)
+        Assert.False(vm.Rows[2].IsOn);  // SendTo: probe null
     }
 
     [Fact]
     public async Task Apply_RereadsState()
     {
         // Review Focus #5: after writing, the VM re-reads to confirm.
-        // TakeOwnership: toggle On → CreateKey called → KeyExists returns true.
-        var registry = new Mock<IRegistrySettingService>();
-        var keyExisted = false;
-        registry.Setup(r => r.KeyExists(RegistryHive.ClassesRoot, TakeOwnershipPath))
-                .Returns(() => keyExisted);
-        registry.Setup(r => r.CreateKey(RegistryHive.ClassesRoot, TakeOwnershipPath))
-                .Callback(() => keyExisted = true);
+        var registry = QuietRegistry();
+        var probeValue = (string?)null;
+        registry.Setup(r => r.ReadString(It.Is<RegistryValue>(
+                v => v.Hive == RegistryHive.ClassesRoot && v.Path == TakeOwnershipPath && v.Name == "")))
+            .Returns(() => probeValue);
 
         var vm = new ContextMenuViewModel(registry.Object);
         await vm.LoadAsync();
+        Assert.False(vm.Rows[1].IsOn); // TakeOwnership
 
-        Assert.False(vm.Rows[0].IsOn);
-        await vm.Rows[0].SetAsync(true);
+        await vm.Rows[1].SetAsync(true);
 
-        Assert.True(vm.Rows[0].IsOn);  // Re-read confirmed the write
+        // All 5 TakeOwnership writes, exact paths/names/data.
+        registry.Verify(r => r.WriteString(
+            It.Is<RegistryValue>(v => v.Hive == RegistryHive.ClassesRoot && v.Path == TakeOwnershipPath && v.Name == ""),
+            "Take Ownership"), Times.Once);
+        registry.Verify(r => r.WriteString(
+            It.Is<RegistryValue>(v => v.Hive == RegistryHive.ClassesRoot && v.Path == TakeOwnershipPath && v.Name == "HasLUAShield"),
+            ""), Times.Once);
+        registry.Verify(r => r.WriteString(
+            It.Is<RegistryValue>(v => v.Hive == RegistryHive.ClassesRoot && v.Path == TakeOwnershipPath && v.Name == "NoWorkingDirectory"),
+            ""), Times.Once);
+        registry.Verify(r => r.WriteString(
+            It.Is<RegistryValue>(v => v.Hive == RegistryHive.ClassesRoot && v.Path == TakeOwnershipCommandPath && v.Name == ""),
+            TakeOwnershipCommand), Times.Once);
+        registry.Verify(r => r.WriteString(
+            It.Is<RegistryValue>(v => v.Hive == RegistryHive.ClassesRoot && v.Path == TakeOwnershipCommandPath && v.Name == "IsolatedCommand"),
+            TakeOwnershipCommand), Times.Once);
+
+        // Write "took effect": probe now non-null → re-read shows On.
+        probeValue = "Take Ownership";
+        await vm.LoadAsync();
+        Assert.True(vm.Rows[1].IsOn);
+
+        // Disable → the runas tree is deleted, probe null → Off.
+        await vm.Rows[1].SetAsync(false);
+        registry.Verify(r => r.DeleteKey(RegistryHive.ClassesRoot, TakeOwnershipPath), Times.Once);
+        probeValue = null;
+        await vm.LoadAsync();
+        Assert.False(vm.Rows[1].IsOn);
     }
 
     [Fact]
-    public async Task Apply_ClassicMenu_CreatesBothKeys()
+    public async Task ModernViews_WritesBothClsids()
     {
-        var registry = new Mock<IRegistrySettingService>();
-        var created = new List<string>();
-
-        registry.Setup(r => r.KeyExists(It.IsAny<RegistryHive>(), It.IsAny<string>())).Returns(false);
-        registry.Setup(r => r.CreateKey(RegistryHive.CurrentUser, ClassicMenuKey1Path))
-                .Callback(() => created.Add("key1"));
-        registry.Setup(r => r.CreateKey(RegistryHive.CurrentUser, ClassicMenuKey2Path))
-                .Callback(() => created.Add("key2"));
+        var registry = QuietRegistry();
+        var probeValue = (string?)null;
+        registry.Setup(r => r.ReadString(It.Is<RegistryValue>(
+                v => v.Hive == RegistryHive.CurrentUser && v.Path == ViewsKey1 && v.Name == "")))
+            .Returns(() => probeValue);
 
         var vm = new ContextMenuViewModel(registry.Object);
         await vm.LoadAsync();
+        Assert.False(vm.Rows[6].IsOn); // ModernViews
 
-        Assert.False(vm.Rows[5].IsOn);
-        await vm.Rows[5].SetAsync(true);
+        await vm.Rows[6].SetAsync(true); // ModernViews
 
-        Assert.Equal(2, created.Count);
-        Assert.Contains("key1", created);
-        Assert.Contains("key2", created);
+        // 6 writes: default + InprocServer32 default + ThreadingModel per CLSID,
+        // covering BOTH the {2aa9162e} and the corrected {6480100b} GUIDs.
+        foreach (var key in new[] { ViewsKey1, ViewsKey2 })
+        {
+            registry.Verify(r => r.WriteString(
+                It.Is<RegistryValue>(v => v.Hive == RegistryHive.CurrentUser && v.Path == key && v.Name == ""),
+                ""), Times.Once);
+            registry.Verify(r => r.WriteString(
+                It.Is<RegistryValue>(v => v.Hive == RegistryHive.CurrentUser && v.Path == key + @"\InprocServer32" && v.Name == ""),
+                ""), Times.Once);
+            registry.Verify(r => r.WriteString(
+                It.Is<RegistryValue>(v => v.Hive == RegistryHive.CurrentUser && v.Path == key + @"\InprocServer32" && v.Name == "ThreadingModel"),
+                "Apartment"), Times.Once);
+        }
+
+        // Flip the probe so the re-read shows On; otherwise the same-value
+        // guard would swallow the disable below.
+        probeValue = "";
+        await vm.LoadAsync();
+        Assert.True(vm.Rows[6].IsOn);
+
+        await vm.Rows[6].SetAsync(false);
+        registry.Verify(r => r.DeleteKey(RegistryHive.CurrentUser, ViewsKey1), Times.Once);
+        registry.Verify(r => r.DeleteKey(RegistryHive.CurrentUser, ViewsKey2), Times.Once);
     }
 
     [Fact]
-    public async Task Apply_Remove_DeletesBothKeys()
+    public async Task NewBat_UsesExpandString()
     {
-        var registry = new Mock<IRegistrySettingService>();
-        var deleted = new List<string>();
-
-        registry.Setup(r => r.KeyExists(It.IsAny<RegistryHive>(), It.IsAny<string>())).Returns(true);
-        registry.Setup(r => r.DeleteKey(RegistryHive.CurrentUser, ClassicMenuKey1Path))
-                .Callback(() => deleted.Add("key1"));
-        registry.Setup(r => r.DeleteKey(RegistryHive.CurrentUser, ClassicMenuKey2Path))
-                .Callback(() => deleted.Add("key2"));
-
+        var registry = QuietRegistry();
         var vm = new ContextMenuViewModel(registry.Object);
         await vm.LoadAsync();
 
-        Assert.True(vm.Rows[5].IsOn);
-        await vm.Rows[5].SetAsync(false);
+        await vm.Rows[4].SetAsync(true); // NewBat
 
-        Assert.Equal(2, deleted.Count);
-        Assert.Contains("key1", deleted);
-        Assert.Contains("key2", deleted);
+        // NullFile is a plain REG_SZ; ItemName must be REG_EXPAND_SZ.
+        registry.Verify(r => r.WriteString(
+            It.Is<RegistryValue>(v => v.Hive == RegistryHive.ClassesRoot && v.Path == BatShellNewPath && v.Name == "NullFile"),
+            ""), Times.Once);
+        registry.Verify(r => r.WriteExpandString(
+            It.Is<RegistryValue>(v => v.Hive == RegistryHive.ClassesRoot && v.Path == BatShellNewPath && v.Name == "ItemName"),
+            @"%systemroot%\System32\acppage.dll,-6002"), Times.Once);
+        registry.Verify(r => r.WriteString(
+            It.Is<RegistryValue>(v => v.Hive == RegistryHive.ClassesRoot && v.Path == BatShellNewPath && v.Name == "ItemName"),
+            It.IsAny<string>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task SendTo_WritesBothHandlers()
+    {
+        var registry = QuietRegistry();
+        var probeValue = (string?)null;
+        registry.Setup(r => r.ReadString(It.Is<RegistryValue>(
+                v => v.Hive == RegistryHive.ClassesRoot && v.Path == SendToPath && v.Name == "")))
+            .Returns(() => probeValue);
+
+        var vm = new ContextMenuViewModel(registry.Object);
+        await vm.LoadAsync();
+        Assert.False(vm.Rows[2].IsOn); // SendTo
+
+        await vm.Rows[2].SetAsync(true); // SendTo
+
+        const string sendToGuid = "{7BA4C740-9E81-11CF-99D3-00AA004AE837}";
+        registry.Verify(r => r.WriteString(
+            It.Is<RegistryValue>(v => v.Hive == RegistryHive.ClassesRoot && v.Path == SendToPath && v.Name == ""),
+            sendToGuid), Times.Once);
+        registry.Verify(r => r.WriteString(
+            It.Is<RegistryValue>(v => v.Hive == RegistryHive.ClassesRoot && v.Path == UserLibrarySendToPath && v.Name == ""),
+            sendToGuid), Times.Once);
+
+        // Flip the probe so the re-read shows On; otherwise the same-value
+        // guard would swallow the disable below.
+        probeValue = sendToGuid;
+        await vm.LoadAsync();
+        Assert.True(vm.Rows[2].IsOn);
+
+        await vm.Rows[2].SetAsync(false);
+        registry.Verify(r => r.DeleteKey(RegistryHive.ClassesRoot, SendToPath), Times.Once);
+        registry.Verify(r => r.DeleteKey(RegistryHive.ClassesRoot, UserLibrarySendToPath), Times.Once);
     }
 }
