@@ -5,7 +5,7 @@
     xmlns:controls="using:AkariTools.App.Controls"
     Loaded="Page_Loaded">
 
-    <Grid>
+    <Grid x:Name="RootGrid">
         <!-- Star field background -->
         <controls:StarField x:Name="StarFieldCtrl" />
 
@@ -19,8 +19,8 @@
             <!-- Left: Title + Cards -->
             <StackPanel Grid.Column="0" VerticalAlignment="Top" Spacing="32">
                 <StackPanel>
-                    <TextBlock Text="Akari Toolbox" FontSize="36" FontWeight="Bold" Foreground="White" />
-                    <TextBlock Text="Optimization &amp; Management" FontSize="14" Foreground="#888888" />
+                    <TextBlock Text="Akari Toolbox" FontSize="36" FontWeight="Bold" Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                    <TextBlock Text="Optimization &amp; Management" FontSize="14" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
 
                 <!-- Hardware cards -->
@@ -36,8 +36,8 @@
                     <Border Grid.Column="0" Background="#1AFFFFFF" CornerRadius="8" Padding="16" Margin="0,0,8,0">
                         <StackPanel Spacing="8">
                             <FontIcon Glyph="&#xE950;" FontSize="20" Foreground="{Binding AccentBrush}" />
-                            <TextBlock Text="Processor" Foreground="#888888" FontSize="12" />
-                            <TextBlock Text="{Binding Hardware.Processor}" Foreground="White" FontSize="14" TextWrapping="Wrap" />
+                            <TextBlock Text="Processor" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12" />
+                            <TextBlock Text="{Binding Hardware.Processor}" Foreground="{ThemeResource TextFillColorPrimaryBrush}" FontSize="14" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
 
@@ -45,8 +45,8 @@
                     <Border Grid.Column="1" Background="#1AFFFFFF" CornerRadius="8" Padding="16" Margin="8,0">
                         <StackPanel Spacing="8">
                             <FontIcon Glyph="&#xE7F4;" FontSize="20" Foreground="{Binding AccentBrush}" />
-                            <TextBlock Text="Graphics" Foreground="#888888" FontSize="12" />
-                            <TextBlock Text="{Binding Hardware.Graphics}" Foreground="White" FontSize="14" TextWrapping="Wrap" />
+                            <TextBlock Text="Graphics" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12" />
+                            <TextBlock Text="{Binding Hardware.Graphics}" Foreground="{ThemeResource TextFillColorPrimaryBrush}" FontSize="14" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
 
@@ -54,8 +54,8 @@
                     <Border Grid.Column="2" Background="#1AFFFFFF" CornerRadius="8" Padding="16" Margin="8,0">
                         <StackPanel Spacing="8">
                             <FontIcon Glyph="&#xE95D;" FontSize="20" Foreground="{Binding AccentBrush}" />
-                            <TextBlock Text="Memory" Foreground="#888888" FontSize="12" />
-                            <TextBlock Text="{Binding Hardware.Memory}" Foreground="White" FontSize="14" TextWrapping="Wrap" />
+                            <TextBlock Text="Memory" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12" />
+                            <TextBlock Text="{Binding Hardware.Memory}" Foreground="{ThemeResource TextFillColorPrimaryBrush}" FontSize="14" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
 
@@ -63,8 +63,8 @@
                     <Border Grid.Column="3" Background="#1AFFFFFF" CornerRadius="8" Padding="16" Margin="8,0,0,0">
                         <StackPanel Spacing="8">
                             <FontIcon Glyph="&#xE7E4;" FontSize="20" Foreground="{Binding AccentBrush}" />
-                            <TextBlock Text="Motherboard" Foreground="#888888" FontSize="12" />
-                            <TextBlock Text="{Binding Hardware.Motherboard}" Foreground="White" FontSize="14" TextWrapping="Wrap" />
+                            <TextBlock Text="Motherboard" Foreground="{ThemeResource TextFillColorSecondaryBrush}" FontSize="12" />
+                            <TextBlock Text="{Binding Hardware.Motherboard}" Foreground="{ThemeResource TextFillColorPrimaryBrush}" FontSize="14" TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
                 </Grid>
@@ -81,7 +81,7 @@
                 Padding="12"
                 Background="#1AFFFFFF"
                 CornerRadius="20">
-                <FontIcon Glyph="&#xE7F4;" FontSize="16" Foreground="White" />
+                <FontIcon Glyph="&#xE7F4;" FontSize="16" Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
                 <Button.Flyout>
                     <MenuFlyout>
                         <MenuFlyoutItem Text="Light" Click="ThemeLight_Click" />

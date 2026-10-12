@@ -8,8 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Windows App SDK -->
-    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="2.3.1" />
+    <!-- Windows App SDK (must match the installed shared runtime minor:
+         framework packages do not roll forward across minors) -->
+    <PackageVersion Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
     <PackageVersion Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.4654" />
     <PackageVersion Include="Microsoft.Windows.SDK.BuildTools.MSIX" Version="1.7.251221100" />
 
