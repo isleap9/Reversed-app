@@ -35,7 +35,7 @@ public sealed partial class SystemPage : Page
             new ExplorerViewModel(registrySettingService),
             new ContextMenuViewModel(registrySettingService),
             new VisualViewModel(registrySettingService),
-            new DateTimeViewModel(registrySettingService, serviceControl),
+            new DateTimeViewModel(registrySettingService, serviceControl, dateFormatService, timeZoneService, cliRunner),
             new SettingsVisibilityViewModel(registrySettingService));
     }
 

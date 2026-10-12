@@ -434,4 +434,151 @@ public sealed class DateTimeViewModelTests
 
         Assert.NotNull(vm.ErrorMessage);
     }
+
+    [Fact]
+    public async Task Setter_SelectShortDate_Commits()
+    {
+        // Binding path: property set (as TwoWay SelectedItem does), then the
+        // tracked commit completes with the write applied.
+        var df = new Mock<IDateFormatService>();
+        df.Setup(d => d.GetValue("sShortDate")).Returns("M/d/yyyy");
+        df.Setup(d => d.SetValue(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+
+        var vm = CreateFullVm(dateFormat: df.Object);
+        await vm.LoadAsync();
+
+        vm.SelectedShortDate = "yyyy-MM-dd";
+        await vm.LastCommit;
+
+        df.Verify(d => d.SetValue("sShortDate", "yyyy-MM-dd"), Times.Once);
+        Assert.Equal("yyyy-MM-dd", vm.SelectedShortDate);
+        Assert.Equal("2026-07-04", vm.PreviewShortDate);
+    }
+
+    [Fact]
+    public async Task Setter_SelectTimeZone_Failure_Reverts()
+    {
+        var zones = new List<TimeZoneOption>
+        {
+            new("Eastern Standard Time", "(UTC-05:00) Eastern Time (US & Canada)"),
+            new("Pacific Standard Time", "(UTC-08:00) Pacific Time (US & Canada)"),
+        };
+        var tz = new Mock<ITimeZoneService>();
+        tz.Setup(t => t.GetTimeZones()).Returns(zones);
+        tz.Setup(t => t.GetCurrentKey()).Returns("Eastern Standard Time");
+        tz.Setup(t => t.SetTimeZone(It.IsAny<string>())).Returns(false);
+
+        var vm = CreateFullVm(timeZone: tz.Object);
+        await vm.LoadAsync();
+
+        vm.SelectedTimeZoneKey = "Pacific Standard Time";
+        await vm.LastCommit;
+
+        Assert.Equal("Eastern Standard Time", vm.SelectedTimeZoneKey);
+        Assert.NotNull(vm.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task Preview_Updates_WithLocaleAndFormat()
+    {
+        var vm = CreateFullVm(dateFormat: MockDateFormat(locale: "en-US", shortDate: "M/d/yyyy"));
+        await vm.LoadAsync();
+        Assert.Equal("7/4/2026", vm.PreviewShortDate);
+
+        await vm.SelectShortDateAsync("yyyy-MM-dd");
+        Assert.Equal("2026-07-04", vm.PreviewShortDate);
+
+        // "/" in a custom pattern renders the locale's date separator.
+        await vm.SelectLocaleAsync("de-DE");
+        Assert.Equal("de-DE", vm.SelectedLocale);
+        Assert.Equal("2026-07-04", vm.PreviewShortDate);
+
+        await vm.SelectShortDateAsync("M/d/yyyy");
+        Assert.Equal("7.4.2026", vm.PreviewShortDate);
+    }
+
+    [Fact]
+    public async Task SelectFirstDay_WritesIndex()
+    {
+        var df = new Mock<IDateFormatService>();
+        df.Setup(d => d.GetFirstDay()).Returns(0);
+        df.Setup(d => d.SetFirstDay(It.IsAny<int>())).Returns(true);
+
+        var vm = CreateFullVm(dateFormat: df.Object);
+        await vm.LoadAsync();
+        Assert.Equal(0, vm.SelectedFirstDayIndex);
+
+        await vm.SelectFirstDayAsync(3);
+
+        df.Verify(d => d.SetFirstDay(3), Times.Once);
+        Assert.Equal(3, vm.SelectedFirstDayIndex);
+    }
+
+    [Fact]
+    public async Task SelectFirstDay_Failure_Reverts()
+    {
+        var df = new Mock<IDateFormatService>();
+        df.Setup(d => d.GetFirstDay()).Returns(1);
+        df.Setup(d => d.SetFirstDay(It.IsAny<int>())).Returns(false);
+
+        var vm = CreateFullVm(dateFormat: df.Object);
+        await vm.LoadAsync();
+        Assert.Equal(1, vm.SelectedFirstDayIndex);
+
+        await vm.SelectFirstDayAsync(5);
+
+        Assert.Equal(1, vm.SelectedFirstDayIndex);
+        Assert.NotNull(vm.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task SelectLocale_Failure_Reverts()
+    {
+        var df = new Mock<IDateFormatService>();
+        df.Setup(d => d.GetLocaleName()).Returns("en-US");
+        df.Setup(d => d.SetLocaleName(It.IsAny<string>())).Returns(false);
+
+        var vm = CreateFullVm(dateFormat: df.Object);
+        await vm.LoadAsync();
+
+        await vm.SelectLocaleAsync("de-DE");
+
+        Assert.Equal("en-US", vm.SelectedLocale);
+        Assert.NotNull(vm.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task SelectShortTime_Failure_Reverts()
+    {
+        var df = new Mock<IDateFormatService>();
+        df.Setup(d => d.GetValue("sShortTime")).Returns("h:mm tt");
+        df.Setup(d => d.SetValue(It.IsAny<string>(), It.IsAny<string>())).Returns(false);
+
+        var vm = CreateFullVm(dateFormat: df.Object);
+        await vm.LoadAsync();
+
+        await vm.SelectShortTimeAsync("HH:mm");
+
+        Assert.Equal("h:mm tt", vm.SelectedShortTime);
+        Assert.NotNull(vm.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task SelectShortDate_EmptyValue_RevertsSilently()
+    {
+        // Binding coercion can push null/empty (unknown raw value, failed
+        // pick): must revert without writing and without an error.
+        var df = new Mock<IDateFormatService>();
+        df.Setup(d => d.GetValue("sShortDate")).Returns("M/d/yyyy");
+        df.Setup(d => d.SetValue(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+
+        var vm = CreateFullVm(dateFormat: df.Object);
+        await vm.LoadAsync();
+
+        await vm.SelectShortDateAsync(null);
+
+        Assert.Equal("M/d/yyyy", vm.SelectedShortDate);
+        Assert.Null(vm.ErrorMessage);
+        df.Verify(d => d.SetValue(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
+    }
 }

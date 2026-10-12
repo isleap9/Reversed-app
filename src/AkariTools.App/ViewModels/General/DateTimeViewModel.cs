@@ -72,6 +72,14 @@ public sealed partial class DateTimeViewModel : ObservableObject
 
     private string? _editingServer;
 
+    // Latest commit ticket: each selection request bumps it; a commit whose
+    // ticket is stale on completion drops its outcome so a failed earlier
+    // pick can never clobber a newer pending selection.
+    private int _commitTicket;
+
+    /// <summary>Most recent selection commit (test/observability hook).</summary>
+    public Task LastCommit { get; private set; } = Task.CompletedTask;
+
     [ObservableProperty]
     private ObservableCollection<string> _ntpServers = new();
 
@@ -125,7 +133,7 @@ public sealed partial class DateTimeViewModel : ObservableObject
         set
         {
             if (value == _selectedTimeZoneKey) return;
-            _ = SelectTimeZoneAsync(value);
+            BeginCommit(SelectTimeZoneAsync(value));
         }
     }
 
@@ -135,7 +143,7 @@ public sealed partial class DateTimeViewModel : ObservableObject
         set
         {
             if (value == _selectedLocale) return;
-            _ = SelectLocaleAsync(value);
+            BeginCommit(SelectLocaleAsync(value));
         }
     }
 
@@ -145,7 +153,7 @@ public sealed partial class DateTimeViewModel : ObservableObject
         set
         {
             if (value == _selectedShortDate) return;
-            _ = SelectShortDateAsync(value);
+            BeginCommit(SelectShortDateAsync(value));
         }
     }
 
@@ -155,7 +163,7 @@ public sealed partial class DateTimeViewModel : ObservableObject
         set
         {
             if (value == _selectedLongDate) return;
-            _ = SelectLongDateAsync(value);
+            BeginCommit(SelectLongDateAsync(value));
         }
     }
 
@@ -165,7 +173,7 @@ public sealed partial class DateTimeViewModel : ObservableObject
         set
         {
             if (value == _selectedShortTime) return;
-            _ = SelectShortTimeAsync(value);
+            BeginCommit(SelectShortTimeAsync(value));
         }
     }
 
@@ -175,7 +183,7 @@ public sealed partial class DateTimeViewModel : ObservableObject
         set
         {
             if (value == _selectedLongTime) return;
-            _ = SelectLongTimeAsync(value);
+            BeginCommit(SelectLongTimeAsync(value));
         }
     }
 
@@ -185,8 +193,21 @@ public sealed partial class DateTimeViewModel : ObservableObject
         set
         {
             if (value == _selectedFirstDayIndex) return;
-            _ = SelectFirstDayAsync(value);
+            BeginCommit(SelectFirstDayAsync(value));
         }
+    }
+
+    /// <summary>
+    /// Tracks a binding-driven commit so tests can await it. Bodies never
+    /// fault (all outcomes funnel through commit/revert), and the fault-only
+    /// continuation observes the task regardless.
+    /// </summary>
+    private void BeginCommit(Task commit)
+    {
+        LastCommit = commit;
+        commit.ContinueWith(
+            t => _ = t.Exception,
+            TaskContinuationOptions.OnlyOnFaulted);
     }
 
     public DateTimeViewModel(
@@ -209,6 +230,9 @@ public sealed partial class DateTimeViewModel : ObservableObject
 
     public async Task LoadAsync()
     {
+        // Invalidate any in-flight selection commit: loaded state wins.
+        _commitTicket++;
+
         var raw = await Task.Run(() => _registrySettingService.ReadString(
             new RegistryValue(RegistryHive.LocalMachine, W32TimeParametersPath, NtpServerName)));
 
@@ -273,176 +297,218 @@ public sealed partial class DateTimeViewModel : ObservableObject
         ApplyCommand.NotifyCanExecuteChanged();
     }
 
-    public async Task SelectTimeZoneAsync(string? value)
+    public Task SelectTimeZoneAsync(string? value)
     {
-        value ??= string.Empty;
-        if (value == _committedTimeZoneKey)
-        {
-            SetSelectedTimeZoneKey(value);
-            return;
-        }
-
-        var previous = _committedTimeZoneKey;
-        SetSelectedTimeZoneKey(value);
-        ErrorMessage = null;
-
-        var ok = await Task.Run(() =>
-        {
-            try { return _timeZoneService?.SetTimeZone(value) ?? false; }
-            catch { return false; }
-        });
-
-        if (ok)
-        {
-            _committedTimeZoneKey = value;
-        }
-        else
-        {
-            SetSelectedTimeZoneKey(previous);
-            ErrorMessage = "Could not change the time zone (administrator rights may be required).";
-        }
-    }
-
-    public async Task SelectLocaleAsync(string? value)
-    {
-        value ??= string.Empty;
-        if (value == _committedLocale)
-        {
-            SetSelectedLocale(value);
-            return;
-        }
-
-        var previous = _committedLocale;
-        SetSelectedLocale(value);
-        ErrorMessage = null;
-
-        var ok = await Task.Run(() =>
-        {
-            try { return _dateFormatService?.SetLocaleName(value) ?? false; }
-            catch { return false; }
-        });
-
-        if (ok)
-        {
-            _committedLocale = value;
-            BroadcastSettingsChange();
-        }
-        else
-        {
-            SetSelectedLocale(previous);
-            ErrorMessage = "Could not update the region format (administrator rights may be required).";
-        }
-    }
-
-    public async Task SelectShortDateAsync(string? value)
-    {
-        await SelectFormatAsync(
+        return CommitStringAsync(
             value,
-            () => _committedShortDate,
-            v => _committedShortDate = v,
-            SetSelectedShortDate,
-            "sShortDate",
+            () => _committedTimeZoneKey,
+            v => _committedTimeZoneKey = v,
+            SetSelectedTimeZoneKey,
+            v => Task.Run(() =>
+            {
+                try { return _timeZoneService?.SetTimeZone(v) ?? false; }
+                catch { return false; }
+            }),
+            afterCommit: null,
+            "Could not change the time zone (administrator rights may be required).");
+    }
+
+    public Task SelectLocaleAsync(string? value)
+    {
+        return CommitStringAsync(
+            value,
+            () => _committedLocale,
+            v => _committedLocale = v,
+            SetSelectedLocale,
+            v => Task.Run(() =>
+            {
+                try { return _dateFormatService?.SetLocaleName(v) ?? false; }
+                catch { return false; }
+            }),
+            afterCommit: BroadcastSettingsChange,
+            "Could not update the region format (administrator rights may be required).");
+    }
+
+    public Task SelectShortDateAsync(string? value)
+    {
+        return CommitFormatAsync(value, "sShortDate",
+            () => _committedShortDate, v => _committedShortDate = v, SetSelectedShortDate,
             "Could not update the short date format.");
     }
 
-    public async Task SelectLongDateAsync(string? value)
+    public Task SelectLongDateAsync(string? value)
     {
-        await SelectFormatAsync(
-            value,
-            () => _committedLongDate,
-            v => _committedLongDate = v,
-            SetSelectedLongDate,
-            "sLongDate",
+        return CommitFormatAsync(value, "sLongDate",
+            () => _committedLongDate, v => _committedLongDate = v, SetSelectedLongDate,
             "Could not update the long date format.");
     }
 
-    public async Task SelectShortTimeAsync(string? value)
+    public Task SelectShortTimeAsync(string? value)
     {
-        await SelectFormatAsync(
-            value,
-            () => _committedShortTime,
-            v => _committedShortTime = v,
-            SetSelectedShortTime,
-            "sShortTime",
+        return CommitFormatAsync(value, "sShortTime",
+            () => _committedShortTime, v => _committedShortTime = v, SetSelectedShortTime,
             "Could not update the short time format.");
     }
 
-    public async Task SelectLongTimeAsync(string? value)
+    public Task SelectLongTimeAsync(string? value)
     {
-        await SelectFormatAsync(
-            value,
-            () => _committedLongTime,
-            v => _committedLongTime = v,
-            SetSelectedLongTime,
-            "sTimeFormat",
+        return CommitFormatAsync(value, "sTimeFormat",
+            () => _committedLongTime, v => _committedLongTime = v, SetSelectedLongTime,
             "Could not update the long time format.");
     }
 
-    public async Task SelectFirstDayAsync(int index)
+    public Task SelectFirstDayAsync(int index)
     {
-        if (index < 0 || index > 6) return;
-        if (index == _committedFirstDay)
-        {
-            SetSelectedFirstDayIndex(index);
-            return;
-        }
-
-        var previous = _committedFirstDay;
-        SetSelectedFirstDayIndex(index);
-        ErrorMessage = null;
-
-        var ok = await Task.Run(() =>
-        {
-            try { return _dateFormatService?.SetFirstDay(index) ?? false; }
-            catch { return false; }
-        });
-
-        if (ok)
-        {
-            _committedFirstDay = index;
-            BroadcastSettingsChange();
-        }
-        else
-        {
-            SetSelectedFirstDayIndex(previous);
-            ErrorMessage = "Could not update the first day of week.";
-        }
+        return CommitIndexAsync(index);
     }
 
-    private async Task SelectFormatAsync(
+    private Task CommitFormatAsync(
+        string? value,
+        string intlName,
+        Func<string> getCommitted,
+        Action<string> setCommitted,
+        Action<string> setSelected,
+        string failureMessage)
+    {
+        return CommitStringAsync(
+            value,
+            getCommitted,
+            setCommitted,
+            setSelected,
+            v => Task.Run(() =>
+            {
+                try { return _dateFormatService?.SetValue(intlName, v) ?? false; }
+                catch { return false; }
+            }),
+            afterCommit: BroadcastSettingsChange,
+            failureMessage);
+    }
+
+    /// <summary>
+    /// Serialized immediate-on-select commit: empty values are rejected
+    /// before any write (silent revert, no error); a commit superseded by a
+    /// newer request drops its outcome so a stale revert can never clobber
+    /// the newer selection. Never faults.
+    /// </summary>
+    private async Task CommitStringAsync(
         string? value,
         Func<string> getCommitted,
         Action<string> setCommitted,
         Action<string> setSelected,
-        string intlName,
+        Func<string, Task<bool>> write,
+        Action? afterCommit,
         string failureMessage)
     {
-        value ??= string.Empty;
-        if (value == getCommitted())
+        try
         {
+            value ??= string.Empty;
+            if (string.IsNullOrEmpty(value))
+            {
+                setSelected(getCommitted());
+                return;
+            }
+            if (value == getCommitted())
+            {
+                setSelected(value);
+                return;
+            }
+
+            var ticket = ++_commitTicket;
+            var previous = getCommitted();
             setSelected(value);
-            return;
+            ErrorMessage = null;
+
+            bool ok;
+            try
+            {
+                ok = await write(value);
+            }
+            catch
+            {
+                ok = false;
+            }
+
+            if (ticket != _commitTicket) return; // Superseded: newer pick owns the UI.
+            if (ok)
+            {
+                setCommitted(value);
+                afterCommit?.Invoke();
+            }
+            else
+            {
+                setSelected(previous);
+                ErrorMessage = failureMessage;
+            }
         }
-
-        var previous = getCommitted();
-        setSelected(value);
-        ErrorMessage = null;
-
-        var ok = await Task.Run(() =>
+        catch
         {
-            try { return _dateFormatService?.SetValue(intlName, value) ?? false; }
-            catch { return false; }
-        });
-
-        if (ok)
-        {
-            setCommitted(value);
-            BroadcastSettingsChange();
+            // Last-resort: never fault the commit task (unobserved exceptions).
+            try
+            {
+                setSelected(getCommitted());
+                ErrorMessage = failureMessage;
+            }
+            catch
+            {
+                // Best-effort only.
+            }
         }
-        else
+    }
+
+    private async Task CommitIndexAsync(int index)
+    {
+        const string failureMessage = "Could not update the first day of week.";
+        try
         {
-            setSelected(previous);
-            ErrorMessage = failureMessage;
+            if (index < 0 || index > 6) return;
+            if (index == _committedFirstDay)
+            {
+                SetSelectedFirstDayIndex(index);
+                return;
+            }
+
+            var ticket = ++_commitTicket;
+            var previous = _committedFirstDay;
+            SetSelectedFirstDayIndex(index);
+            ErrorMessage = null;
+
+            bool ok;
+            try
+            {
+                ok = await Task.Run(() =>
+                {
+                    try { return _dateFormatService?.SetFirstDay(index) ?? false; }
+                    catch { return false; }
+                });
+            }
+            catch
+            {
+                ok = false;
+            }
+
+            if (ticket != _commitTicket) return; // Superseded.
+            if (ok)
+            {
+                _committedFirstDay = index;
+                BroadcastSettingsChange();
+            }
+            else
+            {
+                SetSelectedFirstDayIndex(previous);
+                ErrorMessage = failureMessage;
+            }
+        }
+        catch
+        {
+            try
+            {
+                SetSelectedFirstDayIndex(_committedFirstDay);
+                ErrorMessage = failureMessage;
+            }
+            catch
+            {
+                // Best-effort only.
+            }
         }
     }
 
@@ -567,7 +633,7 @@ public sealed partial class DateTimeViewModel : ObservableObject
         uint flags, uint timeout, out UIntPtr result);
 
     [RelayCommand(CanExecute = nameof(CanAddServer))]
-    private async Task AddServerAsync()
+    private Task AddServerAsync()
     {
         ErrorMessage = null;
 
@@ -578,7 +644,7 @@ public sealed partial class DateTimeViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(trimmed) || trimmed.Any(char.IsWhiteSpace))
         {
             ErrorMessage = "Enter a valid host name (e.g. time.windows.com).";
-            return;
+            return Task.CompletedTask;
         }
 
         // Optional flag format: host,0xflag (e.g. time.windows.com,0x9).
@@ -587,7 +653,7 @@ public sealed partial class DateTimeViewModel : ObservableObject
         if (string.IsNullOrEmpty(host))
         {
             ErrorMessage = "Enter a valid host name (e.g. time.windows.com).";
-            return;
+            return Task.CompletedTask;
         }
         if (parts.Length == 2)
         {
@@ -597,7 +663,7 @@ public sealed partial class DateTimeViewModel : ObservableObject
                 !flag.Skip(2).All(c => Uri.IsHexDigit(c)))
             {
                 ErrorMessage = "Invalid flag format. Use e.g. 0x9.";
-                return;
+                return Task.CompletedTask;
             }
         }
 
@@ -608,7 +674,7 @@ public sealed partial class DateTimeViewModel : ObservableObject
         if (!isSelf && NtpServers.Any(s => s.Equals(trimmed, StringComparison.OrdinalIgnoreCase)))
         {
             ErrorMessage = "That server is already in the list.";
-            return;
+            return Task.CompletedTask;
         }
 
         if (_editingServer is not null)
@@ -629,7 +695,7 @@ public sealed partial class DateTimeViewModel : ObservableObject
             NtpServers.Add(trimmed);
         }
         NewServer = string.Empty;
-        await Task.CompletedTask;
+        return Task.CompletedTask;
     }
 
     [RelayCommand]

@@ -152,10 +152,13 @@
                         <!-- Full Date & Time content (spec §5, §7.2): timezone,
                              locale, format combos, live preview, NTP list.
                              Combo selection commits immediate-on-select: the
-                             Selected*/Text TwoWay bindings push the picked
-                             value into the VM property whose setter runs the
+                             TwoWay Selected*/SelectedItem/SelectedIndex
+                             bindings push the picked value into the VM
+                             property whose setter runs the serialized
                              per-combo write (failed writes revert + surface
-                             an error). No code-behind selection handlers. -->
+                             an error). Format combo text is OneWay so typed
+                             free text never writes. No code-behind selection
+                             handlers. -->
                         <ComboBox
                             Header="Time zone"
                             ItemsSource="{Binding DateTime.TimeZones, Mode=OneWay}"
@@ -170,29 +173,38 @@
                             SelectedValuePath="Name"
                             SelectedValue="{Binding DateTime.SelectedLocale, Mode=TwoWay}"
                             HorizontalAlignment="Stretch" />
+                        <!-- Format combos: Text is OneWay (typed free text never
+                             pushes a write) while SelectedItem commits
+                             discrete dropdown picks immediate-on-select. An
+                             empty push (e.g. selection coercion) reverts
+                             silently in the VM without writing. -->
                         <ComboBox
                             Header="Short date"
                             IsEditable="True"
                             ItemsSource="{Binding DateTime.ShortDates, Mode=OneWay}"
-                            Text="{Binding DateTime.SelectedShortDate, Mode=TwoWay}"
+                            SelectedItem="{Binding DateTime.SelectedShortDate, Mode=TwoWay}"
+                            Text="{Binding DateTime.SelectedShortDate, Mode=OneWay}"
                             HorizontalAlignment="Stretch" />
                         <ComboBox
                             Header="Long date"
                             IsEditable="True"
                             ItemsSource="{Binding DateTime.LongDates, Mode=OneWay}"
-                            Text="{Binding DateTime.SelectedLongDate, Mode=TwoWay}"
+                            SelectedItem="{Binding DateTime.SelectedLongDate, Mode=TwoWay}"
+                            Text="{Binding DateTime.SelectedLongDate, Mode=OneWay}"
                             HorizontalAlignment="Stretch" />
                         <ComboBox
                             Header="Short time"
                             IsEditable="True"
                             ItemsSource="{Binding DateTime.ShortTimes, Mode=OneWay}"
-                            Text="{Binding DateTime.SelectedShortTime, Mode=TwoWay}"
+                            SelectedItem="{Binding DateTime.SelectedShortTime, Mode=TwoWay}"
+                            Text="{Binding DateTime.SelectedShortTime, Mode=OneWay}"
                             HorizontalAlignment="Stretch" />
                         <ComboBox
                             Header="Long time"
                             IsEditable="True"
                             ItemsSource="{Binding DateTime.LongTimes, Mode=OneWay}"
-                            Text="{Binding DateTime.SelectedLongTime, Mode=TwoWay}"
+                            SelectedItem="{Binding DateTime.SelectedLongTime, Mode=TwoWay}"
+                            Text="{Binding DateTime.SelectedLongTime, Mode=OneWay}"
                             HorizontalAlignment="Stretch" />
                         <ComboBox
                             Header="First day of week"
