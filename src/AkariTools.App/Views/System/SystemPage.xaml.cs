@@ -40,7 +40,9 @@ public sealed partial class SystemPage : Page
             new ManualUpdatesViewModel(registrySettingService),
             new PrintServiceViewModel(serviceControl),
             new GameBarViewModel(registrySettingService),
-            new PushNotificationsViewModel(registrySettingService, serviceControl));
+            new PushNotificationsViewModel(registrySettingService, serviceControl),
+            cliRunner,
+            this.XamlRoot);
     }
 
     private async void Page_Loaded(object sender, RoutedEventArgs e)
