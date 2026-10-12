@@ -128,4 +128,20 @@ public sealed class RegistrySettingService : IRegistrySettingService
             return false;
         }
     }
+
+    public bool DeleteValue(RegistryValue value)
+    {
+        try
+        {
+            using var key = OpenHive(value.Hive).OpenSubKey(value.Path, writable: true);
+            if (key is null)
+                return false;
+            key.DeleteValue(value.Name, throwOnMissingValue: false);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
 }
