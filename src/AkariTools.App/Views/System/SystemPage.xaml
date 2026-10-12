@@ -304,10 +304,38 @@
                     </ItemsRepeater>
                 </Expander>
 
-                <!-- Task 6: segmented Disabled | Enabled rows (Manual Windows
-                     Updates, Print Service, Game Bar, Push Notifications). -->
+                <!-- Task 6a: Manual Windows Updates + Print Service segmented
+                     rows. Each row binds SelectedIndex OneWay with user picks
+                     flowing through SelectCommand (a TwoWay binding would push
+                     SelectedIndex to the VM before the command runs and trip
+                     the VM's same-value guard). Game Bar and Push
+                     Notifications rows arrive in Task 6b, with the
+                     SystemViewModel host wiring for all four. -->
+                <controls:SegmentedSettingRow
+                    Label="{Binding ManualUpdates.Label, Mode=OneWay}"
+                    Description="{Binding ManualUpdates.Description, Mode=OneWay}"
+                    SelectedIndex="{Binding ManualUpdates.SelectedIndex, Mode=OneWay}"
+                    IsApplying="{Binding ManualUpdates.IsApplying, Mode=OneWay}"
+                    SelectCommand="{Binding ManualUpdates.SelectCommand, Mode=OneWay}" />
                 <TextBlock
-                    Text="Manual Updates, Print Service, Game Bar, and Push Notifications segmented rows arrive in Task 6."
+                    Text="{Binding ManualUpdates.LastError, Mode=OneWay}"
+                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                    TextWrapping="Wrap" />
+                <controls:SegmentedSettingRow
+                    Label="{Binding PrintService.Label, Mode=OneWay}"
+                    Description="{Binding PrintService.Description, Mode=OneWay}"
+                    SelectedIndex="{Binding PrintService.SelectedIndex, Mode=OneWay}"
+                    IsApplying="{Binding PrintService.IsApplying, Mode=OneWay}"
+                    SelectCommand="{Binding PrintService.SelectCommand, Mode=OneWay}" />
+                <TextBlock
+                    Text="{Binding PrintService.LastError, Mode=OneWay}"
+                    Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                    TextWrapping="Wrap" />
+
+                <!-- Task 6b: Game Bar and Push Notifications segmented rows
+                     arrive next. -->
+                <TextBlock
+                    Text="Game Bar and Push Notifications segmented rows arrive in Task 6b."
                     FontSize="13"
                     Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                     TextWrapping="Wrap" />
