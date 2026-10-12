@@ -272,4 +272,166 @@ public sealed class DateTimeViewModelTests
         Assert.Contains("time.windows.com,0x9", writtenValue);
         Assert.Contains("pool.ntp.org,0x2", writtenValue);
     }
+
+    private static IDateFormatService MockDateFormat(
+        string? locale = null,
+        string? shortDate = null,
+        string? longDate = null,
+        string? shortTime = null,
+        string? timeFormat = null,
+        int? firstDay = null)
+    {
+        var df = new Mock<IDateFormatService>();
+        df.Setup(d => d.GetLocaleName()).Returns(locale);
+        df.Setup(d => d.GetValue("sShortDate")).Returns(shortDate);
+        df.Setup(d => d.GetValue("sLongDate")).Returns(longDate);
+        df.Setup(d => d.GetValue("sShortTime")).Returns(shortTime);
+        df.Setup(d => d.GetValue("sTimeFormat")).Returns(timeFormat);
+        df.Setup(d => d.GetFirstDay()).Returns(firstDay);
+        df.Setup(d => d.SetLocaleName(It.IsAny<string>())).Returns(true);
+        df.Setup(d => d.SetValue(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+        df.Setup(d => d.SetFirstDay(It.IsAny<int>())).Returns(true);
+        return df.Object;
+    }
+
+    private static ITimeZoneService MockTimeZone(
+        IReadOnlyList<TimeZoneOption>? zones = null,
+        string? currentKey = null)
+    {
+        var tz = new Mock<ITimeZoneService>();
+        tz.Setup(t => t.GetTimeZones()).Returns(zones ?? Array.Empty<TimeZoneOption>());
+        tz.Setup(t => t.GetCurrentKey()).Returns(currentKey);
+        tz.Setup(t => t.SetTimeZone(It.IsAny<string>())).Returns(true);
+        return tz.Object;
+    }
+
+    private static ICliRunner MockCliRunner(string? output = "")
+    {
+        var runner = new Mock<ICliRunner>();
+        runner.Setup(r => r.Run(It.IsAny<string>(), It.IsAny<string>())).Returns(output);
+        return runner.Object;
+    }
+
+    private static DateTimeViewModel CreateFullVm(
+        IRegistrySettingService? registry = null,
+        IDateFormatService? dateFormat = null,
+        ITimeZoneService? timeZone = null,
+        ICliRunner? cliRunner = null)
+    {
+        return new DateTimeViewModel(
+            registry ?? MockRegistry(""),
+            MockServiceControl(),
+            dateFormat ?? MockDateFormat(),
+            timeZone ?? MockTimeZone(),
+            cliRunner ?? MockCliRunner());
+    }
+
+    [Fact]
+    public async Task Load_UnknownFormat_ShowsRaw()
+    {
+        // A stored sShortDate outside the preset set must surface verbatim.
+        var vm = CreateFullVm(dateFormat: MockDateFormat(shortDate: "yyyy/MM/dd"));
+        await vm.LoadAsync();
+        Assert.Equal("yyyy/MM/dd", vm.SelectedShortDate);
+    }
+
+    [Fact]
+    public async Task SetTimeZone_Failure_Reverts()
+    {
+        var zones = new List<TimeZoneOption>
+        {
+            new("Eastern Standard Time", "(UTC-05:00) Eastern Time (US & Canada)"),
+            new("Pacific Standard Time", "(UTC-08:00) Pacific Time (US & Canada)"),
+        };
+        var tz = new Mock<ITimeZoneService>();
+        tz.Setup(t => t.GetTimeZones()).Returns(zones);
+        tz.Setup(t => t.GetCurrentKey()).Returns("Eastern Standard Time");
+        tz.Setup(t => t.SetTimeZone(It.IsAny<string>())).Returns(false);
+
+        var vm = CreateFullVm(timeZone: tz.Object);
+        await vm.LoadAsync();
+        Assert.Equal("Eastern Standard Time", vm.SelectedTimeZoneKey);
+
+        await vm.SelectTimeZoneAsync("Pacific Standard Time");
+
+        Assert.Equal("Eastern Standard Time", vm.SelectedTimeZoneKey);
+        Assert.NotNull(vm.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task EditSave_DuplicateExceptSelf_Rejected()
+    {
+        var vm = CreateFullVm(registry: MockRegistry("alpha,0x1 beta,0x2"));
+        await vm.LoadAsync();
+        Assert.Equal(2, vm.NtpServers.Count);
+
+        // Edit "alpha,0x1", then try to save it as the other existing entry.
+        vm.EditNtpCommand.Execute("alpha,0x1");
+        Assert.Equal("alpha,0x1", vm.NewServer);
+        vm.NewServer = "beta,0x2";
+        await vm.AddServerCommand.ExecuteAsync(null);
+
+        Assert.NotNull(vm.ErrorMessage);
+        Assert.Equal(2, vm.NtpServers.Count);
+        Assert.Contains("alpha,0x1", vm.NtpServers);
+        Assert.Contains("beta,0x2", vm.NtpServers);
+    }
+
+    [Fact]
+    public async Task SelectLocale_WritesLocaleName()
+    {
+        var df = new Mock<IDateFormatService>();
+        df.Setup(d => d.GetLocaleName()).Returns("en-US");
+        df.Setup(d => d.SetLocaleName(It.IsAny<string>())).Returns(true);
+
+        var vm = CreateFullVm(dateFormat: df.Object);
+        await vm.LoadAsync();
+
+        await vm.SelectLocaleAsync("de-DE");
+
+        df.Verify(d => d.SetLocaleName("de-DE"), Times.Once);
+        Assert.Equal("de-DE", vm.SelectedLocale);
+    }
+
+    [Fact]
+    public async Task SelectShortDate_WritesPreset()
+    {
+        var df = new Mock<IDateFormatService>();
+        df.Setup(d => d.GetValue("sShortDate")).Returns("M/d/yyyy");
+        df.Setup(d => d.SetValue(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+
+        var vm = CreateFullVm(dateFormat: df.Object);
+        await vm.LoadAsync();
+
+        await vm.SelectShortDateAsync("yyyy-MM-dd");
+
+        df.Verify(d => d.SetValue("sShortDate", "yyyy-MM-dd"), Times.Once);
+        Assert.Equal("yyyy-MM-dd", vm.SelectedShortDate);
+    }
+
+    [Fact]
+    public async Task SyncTimeNow_RunsResync()
+    {
+        var runner = new Mock<ICliRunner>();
+        runner.Setup(r => r.Run(It.IsAny<string>(), It.IsAny<string>())).Returns("success");
+
+        var vm = CreateFullVm(cliRunner: runner.Object);
+        await vm.LoadAsync();
+        await vm.SyncTimeNowCommand.ExecuteAsync(null);
+
+        runner.Verify(r => r.Run("w32tm.exe", "/resync /force"), Times.Once);
+    }
+
+    [Fact]
+    public async Task SyncTimeNow_Failure_SetsError()
+    {
+        var runner = new Mock<ICliRunner>();
+        runner.Setup(r => r.Run(It.IsAny<string>(), It.IsAny<string>())).Returns((string?)null);
+
+        var vm = CreateFullVm(cliRunner: runner.Object);
+        await vm.LoadAsync();
+        await vm.SyncTimeNowCommand.ExecuteAsync(null);
+
+        Assert.NotNull(vm.ErrorMessage);
+    }
 }

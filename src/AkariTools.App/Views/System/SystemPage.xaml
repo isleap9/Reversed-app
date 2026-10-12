@@ -149,11 +149,119 @@
                     HorizontalAlignment="Stretch"
                     HorizontalContentAlignment="Stretch">
                     <StackPanel Spacing="8">
-                        <!-- Task 5: full Date & Time expander content (timezone,
-                             locale, format combos, live preview, NTP list). -->
+                        <!-- Full Date & Time content (spec §5, §7.2): timezone,
+                             locale, format combos, live preview, NTP list.
+                             Combo selection commits immediate-on-select: the
+                             Selected*/Text TwoWay bindings push the picked
+                             value into the VM property whose setter runs the
+                             per-combo write (failed writes revert + surface
+                             an error). No code-behind selection handlers. -->
+                        <ComboBox
+                            Header="Time zone"
+                            ItemsSource="{Binding DateTime.TimeZones, Mode=OneWay}"
+                            DisplayMemberPath="DisplayName"
+                            SelectedValuePath="KeyName"
+                            SelectedValue="{Binding DateTime.SelectedTimeZoneKey, Mode=TwoWay}"
+                            HorizontalAlignment="Stretch" />
+                        <ComboBox
+                            Header="Region format"
+                            ItemsSource="{Binding DateTime.Locales, Mode=OneWay}"
+                            DisplayMemberPath="Display"
+                            SelectedValuePath="Name"
+                            SelectedValue="{Binding DateTime.SelectedLocale, Mode=TwoWay}"
+                            HorizontalAlignment="Stretch" />
+                        <ComboBox
+                            Header="Short date"
+                            IsEditable="True"
+                            ItemsSource="{Binding DateTime.ShortDates, Mode=OneWay}"
+                            Text="{Binding DateTime.SelectedShortDate, Mode=TwoWay}"
+                            HorizontalAlignment="Stretch" />
+                        <ComboBox
+                            Header="Long date"
+                            IsEditable="True"
+                            ItemsSource="{Binding DateTime.LongDates, Mode=OneWay}"
+                            Text="{Binding DateTime.SelectedLongDate, Mode=TwoWay}"
+                            HorizontalAlignment="Stretch" />
+                        <ComboBox
+                            Header="Short time"
+                            IsEditable="True"
+                            ItemsSource="{Binding DateTime.ShortTimes, Mode=OneWay}"
+                            Text="{Binding DateTime.SelectedShortTime, Mode=TwoWay}"
+                            HorizontalAlignment="Stretch" />
+                        <ComboBox
+                            Header="Long time"
+                            IsEditable="True"
+                            ItemsSource="{Binding DateTime.LongTimes, Mode=OneWay}"
+                            Text="{Binding DateTime.SelectedLongTime, Mode=TwoWay}"
+                            HorizontalAlignment="Stretch" />
+                        <ComboBox
+                            Header="First day of week"
+                            ItemsSource="{Binding DateTime.FirstDayNames, Mode=OneWay}"
+                            SelectedIndex="{Binding DateTime.SelectedFirstDayIndex, Mode=TwoWay}"
+                            HorizontalAlignment="Stretch" />
+
+                        <Border Background="#1AFFFFFF" CornerRadius="8" Padding="16">
+                            <StackPanel Spacing="2">
+                                <TextBlock
+                                    Text="Preview"
+                                    FontSize="15"
+                                    FontWeight="SemiBold"
+                                    Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                                <TextBlock
+                                    Text="{Binding DateTime.PreviewShortDate, Mode=OneWay}"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock
+                                    Text="{Binding DateTime.PreviewLongDate, Mode=OneWay}"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock
+                                    Text="{Binding DateTime.PreviewShortTime, Mode=OneWay}"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                <TextBlock
+                                    Text="{Binding DateTime.PreviewLongTime, Mode=OneWay}"
+                                    Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            </StackPanel>
+                        </Border>
+
                         <TextBlock
-                            Text="Date &amp; time settings arrive in Task 5."
-                            FontSize="13"
+                            Text="NTP servers"
+                            FontSize="15"
+                            FontWeight="SemiBold"
+                            Foreground="{ThemeResource TextFillColorPrimaryBrush}" />
+                        <ListView
+                            x:Name="NtpListView"
+                            ItemsSource="{Binding DateTime.NtpServers, Mode=OneWay}"
+                            SelectionMode="Single" />
+                        <TextBox
+                            Header="Server"
+                            PlaceholderText="time.windows.com"
+                            Text="{Binding DateTime.NewServer, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button
+                                Content="Add"
+                                Command="{Binding DateTime.AddServerCommand, Mode=OneWay}" />
+                            <Button
+                                Content="Edit"
+                                Command="{Binding DateTime.EditNtpCommand, Mode=OneWay}"
+                                CommandParameter="{Binding SelectedItem, ElementName=NtpListView, Mode=OneWay}" />
+                            <Button
+                                Content="Remove"
+                                Command="{Binding DateTime.RemoveServerCommand, Mode=OneWay}"
+                                CommandParameter="{Binding SelectedItem, ElementName=NtpListView, Mode=OneWay}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button
+                                Content="Apply NTP servers"
+                                Command="{Binding DateTime.ApplyCommand, Mode=OneWay}" />
+                            <Button
+                                Content="Sync time now"
+                                Command="{Binding DateTime.SyncTimeNowCommand, Mode=OneWay}" />
+                        </StackPanel>
+                        <TextBlock
+                            Text="{Binding DateTime.ErrorMessage, Mode=OneWay}"
+                            Foreground="{ThemeResource SystemFillColorCriticalBrush}"
+                            TextWrapping="Wrap" />
+                        <TextBlock
+                            Text="{Binding DateTime.SyncMessage, Mode=OneWay}"
                             Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                             TextWrapping="Wrap" />
                     </StackPanel>
